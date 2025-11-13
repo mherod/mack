@@ -7,10 +7,15 @@
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "declaration": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "moduleResolution": "node"
   },
   "include": [
     "src/**/*.ts",
     "test/**/*.ts"
   ],
+  "exclude": [
+    "node_modules",
+    "build"
+  ]
 }

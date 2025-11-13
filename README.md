@@ -12,17 +12,25 @@ Text is truncated to fit within the Slack API's limits.
 ### Supported Markdown Elements
 
 - All inline elements (italics, bold, strikethrough, inline code, hyperlinks)
-- Lists (ordered, unordered, checkboxes)
+- Lists (ordered, unordered, checkboxes, nested lists)
 - All headers
 - Code blocks
-- Block quotes (with some limitations)
+- Block quotes (now supports lists, headings, code blocks, and nested quotes)
 - Images
 - Thematic Breaks / Dividers
-- Tables (alignment not preserved)
+- **Tables with native Slack Table blocks**
+  - Rich text formatting in cells (bold, italic, links, code)
+  - Column alignment (left, center, right)
+  - Automatic cell format detection
 
-### Not Yet Supported Markdown Elements
+### Enhanced Features
 
-- Block quotes (limited functionality; does not support lists, headings, or images within the block quote)
+- **Native Table Blocks**: Tables are now rendered as native Slack Table blocks with full formatting support
+  - Both Markdown and HTML tables are supported
+- **Rich Block Quotes**: Blockquotes can contain lists, code blocks, headings, and nested quotes
+- **Military-Grade Robustness**: Comprehensive error handling, input validation, and security features
+- **Safe Text Truncation**: UTF-8 aware truncation that respects character boundaries
+- **HTML Table Support**: Automatically converts HTML `<table>` elements to native Slack Table blocks
 
 ## Installation
 

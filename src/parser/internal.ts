@@ -6,9 +6,25 @@ import {
   SectionBlock,
 } from '@slack/types';
 import {ListOptions, ParsingOptions} from '../types';
-import {section, divider, header, image} from '../slack';
+import {
+  section,
+  divider,
+  header,
+  image,
+  table,
+  TableBlock,
+  TableRow,
+  TableCell,
+  ColumnSetting,
+  RichTextSectionElement,
+} from '../slack';
 import {marked} from 'marked';
 import {XMLParser} from 'fast-xml-parser';
+import {
+  validateUrl,
+  validateRecursionDepth,
+  SECURE_XML_CONFIG,
+} from '../validation';
 
 type PhrasingToken =
   | marked.Tokens.Link
@@ -20,6 +36,9 @@ type PhrasingToken =
   | marked.Tokens.Codespan
   | marked.Tokens.Text
   | marked.Tokens.HTML;
+
+// Recursion depth context for tracking nested content
+let recursionDepth = 0;
 
 function parsePlainText(element: PhrasingToken): string[] {
   switch (element.type) {
@@ -51,39 +70,65 @@ function isSectionBlock(block: KnownBlock): block is SectionBlock {
 function parseMrkdwn(
   element: Exclude<PhrasingToken, marked.Tokens.Image>
 ): string {
-  switch (element.type) {
-    case 'link': {
-      return `<${element.href}|${element.tokens
-        .flatMap(child => parseMrkdwn(child as typeof element))
-        .join('')}> `;
+  recursionDepth++;
+  try {
+    validateRecursionDepth(recursionDepth);
+
+    switch (element.type) {
+      case 'link': {
+        // Validate URL before including it
+        const href =
+          element.href && validateUrl(element.href) ? element.href : '';
+        if (!href) {
+          // URL is invalid, just return the link text without formatting
+          return element.tokens
+            .flatMap(child =>
+              parseMrkdwn(child as Exclude<PhrasingToken, marked.Tokens.Image>)
+            )
+            .join('');
+        }
+        return `<${href}|${element.tokens
+          .flatMap(child =>
+            parseMrkdwn(child as Exclude<PhrasingToken, marked.Tokens.Image>)
+          )
+          .join('')}> `;
+      }
+
+      case 'em': {
+        return `_${element.tokens
+          .flatMap(child =>
+            parseMrkdwn(child as Exclude<PhrasingToken, marked.Tokens.Image>)
+          )
+          .join('')}_`;
+      }
+
+      case 'codespan':
+        return `\`${element.text}\``;
+
+      case 'strong': {
+        return `*${element.tokens
+          .flatMap(child =>
+            parseMrkdwn(child as Exclude<PhrasingToken, marked.Tokens.Image>)
+          )
+          .join('')}*`;
+      }
+
+      case 'text':
+        return element.text;
+
+      case 'del': {
+        return `~${element.tokens
+          .flatMap(child =>
+            parseMrkdwn(child as Exclude<PhrasingToken, marked.Tokens.Image>)
+          )
+          .join('')}~`;
+      }
+
+      default:
+        return '';
     }
-
-    case 'em': {
-      return `_${element.tokens
-        .flatMap(child => parseMrkdwn(child as typeof element))
-        .join('')}_`;
-    }
-
-    case 'codespan':
-      return `\`${element.text}\``;
-
-    case 'strong': {
-      return `*${element.tokens
-        .flatMap(child => parseMrkdwn(child as typeof element))
-        .join('')}*`;
-    }
-
-    case 'text':
-      return element.text;
-
-    case 'del': {
-      return `~${element.tokens
-        .flatMap(child => parseMrkdwn(child as typeof element))
-        .join('')}~`;
-    }
-
-    default:
-      return '';
+  } finally {
+    recursionDepth--;
   }
 }
 
@@ -100,29 +145,23 @@ function addMrkdwn(
   }
 }
 
-function parsePhrasingContentToStrings(
-  element: PhrasingToken,
-  accumulator: string[]
-) {
-  if (element.type === 'image') {
-    accumulator.push(element.href ?? element.title ?? element.text ?? 'image');
-  } else {
-    const text = parseMrkdwn(element);
-    accumulator.push(text);
-  }
-}
-
 function parsePhrasingContent(
   element: PhrasingToken,
   accumulator: (SectionBlock | ImageBlock)[]
 ) {
   if (element.type === 'image') {
-    const imageBlock: ImageBlock = image(
-      element.href,
-      element.text || element.title || element.href,
-      element.title
-    );
-    accumulator.push(imageBlock);
+    try {
+      const imageBlock: ImageBlock = image(
+        element.href,
+        element.text || element.title || element.href,
+        element.title
+      );
+      accumulator.push(imageBlock);
+    } catch (error) {
+      // Skip images with invalid URLs instead of throwing
+      // This allows graceful degradation
+      console.warn(`Skipping image with invalid URL: ${element.href}`);
+    }
   } else {
     const text = parseMrkdwn(element);
     addMrkdwn(text, accumulator);
@@ -154,112 +193,505 @@ function parseList(
 ): SectionBlock {
   let index = 0;
   const contents = element.items.map(item => {
-    const paragraph = item.tokens[0] as marked.Tokens.Text;
-    if (!paragraph || paragraph.type !== 'text' || !paragraph.tokens?.length) {
-      return paragraph?.text || '';
-    }
+    // Handle multi-block list items - process all tokens, not just the first
+    let itemText = '';
 
-    const text = paragraph.tokens
-      .filter(
-        (child): child is Exclude<PhrasingToken, marked.Tokens.Image> =>
-          child.type !== 'image'
-      )
-      .flatMap(parseMrkdwn)
-      .join('');
+    for (const token of item.tokens) {
+      if (token.type === 'text' || token.type === 'paragraph') {
+        const textToken = token as marked.Tokens.Text | marked.Tokens.Paragraph;
+        if (!textToken.tokens?.length) {
+          continue;
+        }
+
+        const text = textToken.tokens
+          .filter(
+            (child): child is Exclude<PhrasingToken, marked.Tokens.Image> =>
+              child.type !== 'image'
+          )
+          .flatMap(parseMrkdwn)
+          .join('');
+
+        itemText += text;
+      } else if (token.type === 'code') {
+        // Include code blocks within list items
+        const codeToken = token as marked.Tokens.Code;
+        itemText += `\n\`\`\`\n${codeToken.text}\n\`\`\``;
+      } else if (token.type === 'list') {
+        // Include nested lists
+        const nestedList = parseList(token as marked.Tokens.List, options);
+        if (nestedList.text && 'text' in nestedList.text) {
+          itemText += `\n${nestedList.text.text}`;
+        }
+      }
+      // Silently skip unsupported token types in lists
+    }
 
     if (element.ordered) {
       index += 1;
-      return `${index}. ${text}`;
+      return `${index}. ${itemText}`;
     } else if (item.checked !== null && item.checked !== undefined) {
-      return `${options.checkboxPrefix?.(item.checked) ?? '• '}${text}`;
+      return `${options.checkboxPrefix?.(item.checked) ?? '• '}${itemText}`;
     } else {
-      return `• ${text}`;
+      return `• ${itemText}`;
     }
   });
 
   return section(contents.join('\n'));
 }
 
-function combineBetweenPipes(texts: String[]): string {
-  return `| ${texts.join(' | ')} |`;
-}
+// Helper function to convert marked tokens to rich text elements
+function tokensToRichTextElements(
+  tokens: PhrasingToken[]
+): RichTextSectionElement[] {
+  const elements: RichTextSectionElement[] = [];
 
-function parseTableRows(rows: marked.Tokens.TableCell[][]): string[] {
-  const parsedRows: string[] = [];
-  rows.forEach((row, index) => {
-    const parsedCells = parseTableRow(row);
-    if (index === 1) {
-      const headerRowArray = new Array(parsedCells.length).fill('---');
-      const headerRow = combineBetweenPipes(headerRowArray);
-      parsedRows.push(headerRow);
+  for (const token of tokens) {
+    switch (token.type) {
+      case 'text':
+        elements.push({
+          type: 'text',
+          text: token.text,
+        });
+        break;
+
+      case 'strong': {
+        const strongText = token.tokens
+          .map(t => (t as marked.Tokens.Text).text || '')
+          .join('');
+        elements.push({
+          type: 'text',
+          text: strongText,
+          style: {bold: true},
+        });
+        break;
+      }
+
+      case 'em': {
+        const emText = token.tokens
+          .map(t => (t as marked.Tokens.Text).text || '')
+          .join('');
+        elements.push({
+          type: 'text',
+          text: emText,
+          style: {italic: true},
+        });
+        break;
+      }
+
+      case 'del': {
+        const delText = token.tokens
+          .map(t => (t as marked.Tokens.Text).text || '')
+          .join('');
+        elements.push({
+          type: 'text',
+          text: delText,
+          style: {strike: true},
+        });
+        break;
+      }
+
+      case 'codespan':
+        elements.push({
+          type: 'text',
+          text: token.text,
+          style: {code: true},
+        });
+        break;
+
+      case 'link': {
+        const linkText = token.tokens
+          .map(t => (t as marked.Tokens.Text).text || '')
+          .join('');
+        if (validateUrl(token.href)) {
+          elements.push({
+            type: 'link',
+            text: linkText,
+            url: token.href,
+          });
+        } else {
+          // Fallback to plain text if URL is invalid
+          elements.push({
+            type: 'text',
+            text: linkText,
+          });
+        }
+        break;
+      }
+
+      case 'image':
+        // Images can't be inline in table cells, use text fallback
+        elements.push({
+          type: 'text',
+          text: token.text || token.title || '[image]',
+        });
+        break;
+
+      default:
+        // Fallback for unsupported token types
+        if (
+          'text' in token &&
+          typeof (token as {text?: string}).text === 'string'
+        ) {
+          elements.push({
+            type: 'text',
+            text: (token as {text: string}).text,
+          });
+        }
     }
-    parsedRows.push(combineBetweenPipes(parsedCells));
+  }
+
+  return elements;
+}
+
+// Parse a table cell to a TableCell object
+function parseTableCellToBlock(cell: marked.Tokens.TableCell): TableCell {
+  // Check if cell contains complex formatting
+  const hasComplexFormatting = cell.tokens.some(token => {
+    const tokenType = (token as PhrasingToken).type;
+    return ['strong', 'em', 'del', 'link', 'codespan'].includes(tokenType);
   });
-  return parsedRows;
-}
 
-function parseTableRow(row: marked.Tokens.TableCell[]): String[] {
-  const parsedCells: String[] = [];
-  row.forEach(cell => {
-    parsedCells.push(parseTableCell(cell));
-  });
-  return parsedCells;
-}
-
-function parseTableCell(cell: marked.Tokens.TableCell): String {
-  const texts = cell.tokens.reduce((accumulator, child) => {
-    parsePhrasingContentToStrings(child as PhrasingToken, accumulator);
-    return accumulator;
-  }, [] as string[]);
-  return texts.join(' ');
-}
-
-function parseTable(element: marked.Tokens.Table): SectionBlock {
-  const parsedRows = parseTableRows([element.header, ...element.rows]);
-
-  return section(`\`\`\`\n${parsedRows.join('\n')}\n\`\`\``);
-}
-
-function parseBlockquote(element: marked.Tokens.Blockquote): KnownBlock[] {
-  return element.tokens
-    .filter(
-      (child): child is marked.Tokens.Paragraph => child.type === 'paragraph'
-    )
-    .flatMap(p =>
-      parseParagraph(p).map(block => {
-        if (isSectionBlock(block) && block.text?.text?.includes('\n'))
-          block.text.text = '> ' + block.text.text.replace(/\n/g, '\n> ');
-        return block;
+  if (hasComplexFormatting) {
+    // Use rich_text for complex formatting
+    const elements = tokensToRichTextElements(cell.tokens as PhrasingToken[]);
+    return {
+      type: 'rich_text',
+      elements: [
+        {
+          type: 'rich_text_section',
+          elements,
+        },
+      ],
+    };
+  } else {
+    // Use raw_text for simple text
+    const text = cell.tokens
+      .map(token => {
+        if ('text' in token) {
+          return (token as marked.Tokens.Text).text;
+        }
+        return '';
       })
-    );
+      .join('');
+    return {
+      type: 'raw_text',
+      text,
+    };
+  }
+}
+
+// Parse table rows to TableRow array
+function parseTableRowsToBlocks(
+  header: marked.Tokens.TableCell[],
+  rows: marked.Tokens.TableCell[][],
+  align: Array<'left' | 'center' | 'right' | null>
+): {tableRows: TableRow[]; columnSettings: ColumnSetting[]} {
+  const tableRows: TableRow[] = [];
+
+  // Parse header row
+  const headerRow: TableCell[] = header.map(cell =>
+    parseTableCellToBlock(cell)
+  );
+  tableRows.push(headerRow);
+
+  // Parse data rows
+  for (const row of rows) {
+    const tableRow: TableCell[] = row.map(cell => parseTableCellToBlock(cell));
+    tableRows.push(tableRow);
+  }
+
+  // Generate column settings from alignment
+  const columnSettings: ColumnSetting[] = [];
+  for (let i = 0; i < align.length && i < 20; i++) {
+    if (align[i] && align[i] !== 'left') {
+      // Only add settings for non-default alignment
+      columnSettings.push({
+        align: align[i] as 'center' | 'right',
+      });
+    } else if (columnSettings.length > 0) {
+      // Add null to maintain column index
+      columnSettings.push({});
+    }
+  }
+
+  return {tableRows, columnSettings};
+}
+
+function parseTable(element: marked.Tokens.Table): TableBlock {
+  const {tableRows, columnSettings} = parseTableRowsToBlocks(
+    element.header,
+    element.rows,
+    element.align
+  );
+
+  return table(
+    tableRows,
+    columnSettings.length > 0 ? columnSettings : undefined
+  );
+}
+
+function parseBlockquote(
+  element: marked.Tokens.Blockquote
+): (KnownBlock | TableBlock)[] {
+  // Process all token types within blockquotes, not just paragraphs
+  const blocks = element.tokens.flatMap(token => {
+    if (token.type === 'paragraph') {
+      return parseParagraph(token);
+    } else if (token.type === 'list') {
+      return [parseList(token)];
+    } else if (token.type === 'code') {
+      return [parseCode(token)];
+    } else if (token.type === 'blockquote') {
+      // Handle nested blockquotes
+      return parseBlockquote(token);
+    } else if (token.type === 'heading') {
+      return [parseHeading(token)];
+    } else if (token.type === 'html') {
+      return parseHTML(token);
+    }
+    // Skip unsupported token types in blockquotes
+    return [];
+  });
+
+  // Add blockquote formatting to section blocks only
+  return blocks.map(block => {
+    if ('type' in block && block.type === 'section' && block.text?.text) {
+      block.text.text = '> ' + block.text.text.replace(/\n/g, '\n> ');
+    }
+    return block;
+  });
 }
 
 function parseThematicBreak(): DividerBlock {
   return divider();
 }
 
+// Type for parsed XML/HTML elements
+interface XmlElement {
+  '#text'?: string;
+  _?: string;
+  '@_align'?: string;
+  '@_style'?: string;
+  [key: string]: unknown;
+}
+
+// Helper function to extract text content from HTML element
+function extractTextFromHtmlElement(
+  element: XmlElement | string | XmlElement[]
+): string {
+  if (typeof element === 'string') {
+    return element;
+  }
+  if (Array.isArray(element)) {
+    return element.map(e => extractTextFromHtmlElement(e)).join('');
+  }
+  if (element && element['#text']) {
+    return element['#text'];
+  }
+  if (element && typeof element === 'object') {
+    // Handle nested elements (like <b>, <i>, etc.)
+    const keys = Object.keys(element);
+    for (const key of keys) {
+      if (key !== '@_align' && !key.startsWith('@_')) {
+        const value = element[key];
+        if (typeof value === 'string') {
+          return value;
+        }
+        if (
+          value &&
+          typeof value === 'object' &&
+          (value as XmlElement)['#text']
+        ) {
+          return (value as XmlElement)['#text'] as string;
+        }
+        // Recursively extract from nested elements
+        const extracted = extractTextFromHtmlElement(value as XmlElement);
+        if (extracted) {
+          return extracted;
+        }
+      }
+    }
+  }
+  return '';
+}
+
+// Type for HTML table structure from XML parser
+interface HtmlTableElement {
+  colgroup?: {
+    col?: XmlElement | XmlElement[];
+  };
+  thead?: {
+    tr?: XmlElement | XmlElement[];
+  };
+  tbody?: {
+    tr?: XmlElement | XmlElement[];
+  };
+  tr?: XmlElement | XmlElement[];
+  [key: string]: unknown;
+}
+
+// Helper function to parse HTML table to TableBlock
+function parseHtmlTable(tableElement: HtmlTableElement): TableBlock | null {
+  try {
+    const rows: TableRow[] = [];
+    const columnSettings: ColumnSetting[] = [];
+
+    // Extract alignment from col or colgroup elements if present
+    if (tableElement.colgroup && tableElement.colgroup.col) {
+      const cols = Array.isArray(tableElement.colgroup.col)
+        ? tableElement.colgroup.col
+        : [tableElement.colgroup.col];
+
+      cols.forEach((col: XmlElement, index: number) => {
+        if (col['@_align']) {
+          const align = (col['@_align'] as string).toLowerCase();
+          if (['center', 'right'].includes(align)) {
+            columnSettings[index] = {align: align as 'center' | 'right'};
+          }
+        }
+      });
+    }
+
+    // Process thead if present
+    if (tableElement.thead && tableElement.thead.tr) {
+      const headerRow = Array.isArray(tableElement.thead.tr)
+        ? tableElement.thead.tr[0]
+        : tableElement.thead.tr;
+
+      if (headerRow && (headerRow as XmlElement).th) {
+        const headers = Array.isArray((headerRow as XmlElement).th)
+          ? ((headerRow as XmlElement).th as XmlElement[])
+          : [(headerRow as XmlElement).th as XmlElement];
+        const headerCells: TableCell[] = headers.map(
+          (th: XmlElement, index: number) => {
+            const text = extractTextFromHtmlElement(th);
+            // Check for alignment attribute
+            if (th['@_align'] && !columnSettings[index]) {
+              const align = (th['@_align'] as string).toLowerCase();
+              if (['center', 'right'].includes(align)) {
+                columnSettings[index] = {align: align as 'center' | 'right'};
+              }
+            }
+            return {type: 'raw_text', text};
+          }
+        );
+        rows.push(headerCells);
+      }
+    }
+
+    // Process tbody or direct tr elements
+    const bodyElement = tableElement.tbody || tableElement;
+    if (bodyElement.tr) {
+      const dataRows = Array.isArray(bodyElement.tr)
+        ? bodyElement.tr
+        : [bodyElement.tr];
+
+      for (const tr of dataRows) {
+        // Skip if this was already processed as header
+        if (tableElement.thead && tableElement.thead.tr === tr) {
+          continue;
+        }
+
+        const cells: TableCell[] = [];
+
+        // Handle both td and th elements in body
+        const cellElements = (tr as XmlElement).td || (tr as XmlElement).th;
+        if (cellElements) {
+          const cellArray = Array.isArray(cellElements)
+            ? cellElements
+            : [cellElements];
+          cellArray.forEach((cell: XmlElement, index: number) => {
+            const text = extractTextFromHtmlElement(cell);
+            // Check for alignment attribute
+            if (cell['@_align'] && !columnSettings[index]) {
+              const align = (cell['@_align'] as string).toLowerCase();
+              if (['center', 'right'].includes(align)) {
+                columnSettings[index] = {align: align as 'center' | 'right'};
+              }
+            }
+            cells.push({type: 'raw_text', text});
+          });
+
+          if (cells.length > 0) {
+            rows.push(cells);
+          }
+        }
+      }
+    }
+
+    // Only create table if we have rows
+    if (rows.length > 0) {
+      // Clean up column settings - remove empty entries at the end
+      const cleanedSettings = columnSettings.filter((s, i) => {
+        // Keep settings if they have values or if there are values after them
+        return s.align || columnSettings.slice(i + 1).some(cs => cs.align);
+      });
+
+      return table(
+        rows,
+        cleanedSettings.length > 0 ? cleanedSettings : undefined
+      );
+    }
+
+    return null;
+  } catch (error) {
+    console.warn(
+      `Failed to parse HTML table: ${
+        error instanceof Error ? error.message : 'Unknown error'
+      }`
+    );
+    return null;
+  }
+}
+
 function parseHTML(
   element: marked.Tokens.HTML | marked.Tokens.Tag
-): KnownBlock[] {
-  const parser = new XMLParser({ignoreAttributes: false});
-  const res = parser.parse(element.raw);
+): (KnownBlock | TableBlock)[] {
+  try {
+    const parser = new XMLParser(SECURE_XML_CONFIG);
+    const res = parser.parse(element.raw);
+    const blocks: (KnownBlock | TableBlock)[] = [];
 
-  if (res.img) {
-    const tags = res.img instanceof Array ? res.img : [res.img];
+    // Handle tables
+    if (res.table) {
+      const tableBlock = parseHtmlTable(res.table);
+      if (tableBlock) {
+        blocks.push(tableBlock);
+      }
+    }
 
-    return tags
-      .map((img: Record<string, string>) => {
-        const url: string = img['@_src'];
-        return image(url, img['@_alt'] || url);
-      })
-      .filter((e: Record<string, string>) => !!e);
-  } else return [];
+    // Handle images
+    if (res.img) {
+      const tags = res.img instanceof Array ? res.img : [res.img];
+
+      const imageBlocks = tags
+        .map((img: Record<string, string>) => {
+          const url: string = img['@_src'];
+          // Validate URL before creating image block
+          if (!validateUrl(url)) {
+            return null;
+          }
+          return image(url, img['@_alt'] || url);
+        })
+        .filter((e: ImageBlock | null) => e !== null) as ImageBlock[];
+
+      blocks.push(...imageBlocks);
+    }
+
+    return blocks;
+  } catch (error) {
+    // Log parsing error but don't crash - just skip this HTML block
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error';
+    console.warn(`Failed to parse HTML block: ${errorMessage}`);
+    return [];
+  }
 }
 
 function parseToken(
   token: marked.Token,
   options: ParsingOptions
-): KnownBlock[] {
+): (KnownBlock | TableBlock)[] {
   switch (token.type) {
     case 'heading':
       return [parseHeading(token)];
@@ -293,6 +725,6 @@ function parseToken(
 export function parseBlocks(
   tokens: marked.TokensList,
   options: ParsingOptions = {}
-): KnownBlock[] {
+): (KnownBlock | TableBlock)[] {
   return tokens.flatMap(token => parseToken(token, options));
 }
