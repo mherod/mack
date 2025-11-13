@@ -7,6 +7,37 @@ import type {
 import {safeTruncate, validateUrl} from './validation';
 import {ValidationError} from './errors';
 
+// Video block type (not yet in @slack/types)
+export interface VideoBlock {
+  type: 'video';
+  alt_text: string;
+  title: {
+    type: 'plain_text';
+    text: string;
+    emoji?: boolean;
+  };
+  thumbnail_url: string;
+  video_url: string;
+  author_name?: string;
+  block_id?: string;
+  description?: {
+    type: 'plain_text';
+    text: string;
+    emoji?: boolean;
+  };
+  provider_icon_url?: string;
+  provider_name?: string;
+  title_url?: string;
+}
+
+// File block type (not yet in @slack/types)
+export interface FileBlock {
+  type: 'file';
+  external_id: string;
+  source: 'remote';
+  block_id?: string;
+}
+
 // Table block types (not yet in @slack/types)
 export interface TableBlock {
   type: 'table';
@@ -50,6 +81,9 @@ const MAX_TEXT_LENGTH = 3000;
 const MAX_HEADER_LENGTH = 150;
 const MAX_IMAGE_TITLE_LENGTH = 2000;
 const MAX_IMAGE_ALT_TEXT_LENGTH = 2000;
+const MAX_VIDEO_TITLE_LENGTH = 200;
+const MAX_VIDEO_DESCRIPTION_LENGTH = 200;
+const MAX_VIDEO_AUTHOR_NAME_LENGTH = 50;
 
 export function section(text: string): SectionBlock {
   if (typeof text !== 'string') {
@@ -124,6 +158,103 @@ export function image(
           text: safeTruncate(title, MAX_IMAGE_TITLE_LENGTH),
         }
       : undefined,
+  };
+}
+
+export interface VideoBlockOptions {
+  altText: string;
+  title: string;
+  thumbnailUrl: string;
+  videoUrl: string;
+  authorName?: string;
+  description?: string;
+  providerIconUrl?: string;
+  providerName?: string;
+  titleUrl?: string;
+}
+
+export function video(options: VideoBlockOptions): VideoBlock {
+  // Validate required fields
+  if (typeof options.altText !== 'string' || !options.altText) {
+    throw new ValidationError('Video alt text must be a non-empty string');
+  }
+
+  if (typeof options.title !== 'string' || !options.title) {
+    throw new ValidationError('Video title must be a non-empty string');
+  }
+
+  if (typeof options.thumbnailUrl !== 'string' || !options.thumbnailUrl) {
+    throw new ValidationError('Video thumbnail URL must be a non-empty string');
+  }
+
+  if (typeof options.videoUrl !== 'string' || !options.videoUrl) {
+    throw new ValidationError('Video URL must be a non-empty string');
+  }
+
+  // Validate URLs
+  const isValidUrl = (url: string) => {
+    const isAbsoluteUrl =
+      url.startsWith('http://') ||
+      url.startsWith('https://') ||
+      url.startsWith('data:');
+    return !isAbsoluteUrl || validateUrl(url);
+  };
+
+  if (!isValidUrl(options.thumbnailUrl)) {
+    throw new ValidationError(`Invalid thumbnail URL: ${options.thumbnailUrl}`);
+  }
+
+  if (!isValidUrl(options.videoUrl)) {
+    throw new ValidationError(`Invalid video URL: ${options.videoUrl}`);
+  }
+
+  // Validate title URL if provided
+  if (options.titleUrl && !isValidUrl(options.titleUrl)) {
+    throw new ValidationError(`Invalid title URL: ${options.titleUrl}`);
+  }
+
+  // Validate provider icon URL if provided
+  if (options.providerIconUrl && !isValidUrl(options.providerIconUrl)) {
+    throw new ValidationError(
+      `Invalid provider icon URL: ${options.providerIconUrl}`
+    );
+  }
+
+  return {
+    type: 'video',
+    alt_text: safeTruncate(options.altText, MAX_IMAGE_ALT_TEXT_LENGTH),
+    title: {
+      type: 'plain_text',
+      text: safeTruncate(options.title, MAX_VIDEO_TITLE_LENGTH),
+      emoji: true,
+    },
+    thumbnail_url: options.thumbnailUrl,
+    video_url: options.videoUrl,
+    author_name: options.authorName
+      ? safeTruncate(options.authorName, MAX_VIDEO_AUTHOR_NAME_LENGTH)
+      : undefined,
+    description: options.description
+      ? {
+          type: 'plain_text',
+          text: safeTruncate(options.description, MAX_VIDEO_DESCRIPTION_LENGTH),
+          emoji: true,
+        }
+      : undefined,
+    provider_icon_url: options.providerIconUrl,
+    provider_name: options.providerName,
+    title_url: options.titleUrl,
+  };
+}
+
+export function file(externalId: string): FileBlock {
+  if (typeof externalId !== 'string' || !externalId) {
+    throw new ValidationError('File external_id must be a non-empty string');
+  }
+
+  return {
+    type: 'file',
+    external_id: externalId,
+    source: 'remote',
   };
 }
 

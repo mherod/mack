@@ -11,7 +11,11 @@ import {
   divider,
   header,
   image,
+  video,
   table,
+  file,
+  VideoBlock,
+  FileBlock,
   TableBlock,
   TableRow,
   TableCell,
@@ -39,6 +43,49 @@ type PhrasingToken =
 
 // Recursion depth context for tracking nested content
 let recursionDepth = 0;
+
+// File extensions that should be converted to file blocks
+const FILE_EXTENSIONS = new Set([
+  'pdf',
+  'doc',
+  'docx',
+  'xls',
+  'xlsx',
+  'ppt',
+  'pptx',
+  'zip',
+  'rar',
+  '7z',
+  'tar',
+  'gz',
+  'txt',
+  'csv',
+  'json',
+  'xml',
+  'jpg',
+  'jpeg',
+  'png',
+  'gif',
+  'bmp',
+  'svg',
+]);
+
+function detectFileExtension(href: string): string | null {
+  // Extract the path part (before query string or hash)
+  const pathname = href.split('?')[0].split('#')[0];
+  const match = pathname.match(/\.([a-zA-Z0-9]+)$/);
+  return match ? match[1].toLowerCase() : null;
+}
+
+function isFileType(extension: string | null): boolean {
+  return extension !== null && FILE_EXTENSIONS.has(extension);
+}
+
+function extractFileName(href: string): string {
+  // Extract the path part (before query string or hash)
+  const pathname = href.split('?')[0].split('#')[0];
+  return pathname.split('/').pop() || 'Document';
+}
 
 function parsePlainText(element: PhrasingToken): string[] {
   switch (element.type) {
@@ -134,7 +181,7 @@ function parseMrkdwn(
 
 function addMrkdwn(
   content: string,
-  accumulator: (SectionBlock | ImageBlock)[]
+  accumulator: (SectionBlock | ImageBlock | FileBlock)[]
 ) {
   const last = accumulator[accumulator.length - 1];
 
@@ -147,7 +194,7 @@ function addMrkdwn(
 
 function parsePhrasingContent(
   element: PhrasingToken,
-  accumulator: (SectionBlock | ImageBlock)[]
+  accumulator: (SectionBlock | ImageBlock | FileBlock)[]
 ) {
   if (element.type === 'image') {
     try {
@@ -162,17 +209,45 @@ function parsePhrasingContent(
       // This allows graceful degradation
       console.warn(`Skipping image with invalid URL: ${element.href}`);
     }
+  } else if (element.type === 'link') {
+    // Check if this is a file link - check both URL and link text
+    const linkText = element.tokens
+      .flatMap(child => parsePlainText(child as PhrasingToken))
+      .join('');
+    const urlExtension = detectFileExtension(element.href);
+    const textExtension = detectFileExtension(linkText);
+    const fileExtension = urlExtension || textExtension;
+
+    if (isFileType(fileExtension)) {
+      try {
+        // Prefer text filename, fall back to URL filename
+        const fileName = textExtension
+          ? extractFileName(linkText)
+          : extractFileName(element.href);
+        const fileBlock: FileBlock = file(fileName);
+        accumulator.push(fileBlock);
+      } catch (error) {
+        // If file block creation fails, treat as regular link
+        const text = parseMrkdwn(element);
+        addMrkdwn(text, accumulator);
+      }
+    } else {
+      const text = parseMrkdwn(element);
+      addMrkdwn(text, accumulator);
+    }
   } else {
     const text = parseMrkdwn(element);
     addMrkdwn(text, accumulator);
   }
 }
 
-function parseParagraph(element: marked.Tokens.Paragraph): KnownBlock[] {
+function parseParagraph(
+  element: marked.Tokens.Paragraph
+): (KnownBlock | FileBlock)[] {
   return element.tokens.reduce((accumulator, child) => {
     parsePhrasingContent(child as PhrasingToken, accumulator);
     return accumulator;
-  }, [] as (SectionBlock | ImageBlock)[]);
+  }, [] as (SectionBlock | ImageBlock | FileBlock)[]);
 }
 
 function parseHeading(element: marked.Tokens.Heading): HeaderBlock {
@@ -432,7 +507,7 @@ function parseTable(element: marked.Tokens.Table): TableBlock {
 
 function parseBlockquote(
   element: marked.Tokens.Blockquote
-): (KnownBlock | TableBlock)[] {
+): (KnownBlock | TableBlock | VideoBlock | FileBlock)[] {
   // Process all token types within blockquotes, not just paragraphs
   const blocks = element.tokens.flatMap(token => {
     if (token.type === 'paragraph') {
@@ -646,11 +721,11 @@ function parseHtmlTable(tableElement: HtmlTableElement): TableBlock | null {
 
 function parseHTML(
   element: marked.Tokens.HTML | marked.Tokens.Tag
-): (KnownBlock | TableBlock)[] {
+): (KnownBlock | TableBlock | VideoBlock | FileBlock)[] {
   try {
     const parser = new XMLParser(SECURE_XML_CONFIG);
     const res = parser.parse(element.raw);
-    const blocks: (KnownBlock | TableBlock)[] = [];
+    const blocks: (KnownBlock | TableBlock | VideoBlock | FileBlock)[] = [];
 
     // Handle tables
     if (res.table) {
@@ -678,6 +753,42 @@ function parseHTML(
       blocks.push(...imageBlocks);
     }
 
+    // Handle videos
+    if (res.video) {
+      const tags = res.video instanceof Array ? res.video : [res.video];
+
+      const videoBlocks = tags
+        .map((vid: Record<string, unknown>) => {
+          const videoUrl = String(vid['@_src'] || '');
+          const posterUrl = String(vid['@_poster'] || '');
+          const title = String(vid['@_title'] || 'Video');
+          const altText = String(vid['@_alt'] || title);
+
+          // Validate URLs before creating video block
+          if (!videoUrl || !validateUrl(videoUrl)) {
+            return null;
+          }
+          if (posterUrl && !validateUrl(posterUrl)) {
+            return null;
+          }
+
+          try {
+            return video({
+              videoUrl,
+              thumbnailUrl: posterUrl || videoUrl,
+              title,
+              altText,
+              description: undefined,
+            });
+          } catch {
+            return null;
+          }
+        })
+        .filter((e: VideoBlock | null) => e !== null) as VideoBlock[];
+
+      blocks.push(...videoBlocks);
+    }
+
     return blocks;
   } catch (error) {
     // Log parsing error but don't crash - just skip this HTML block
@@ -691,7 +802,7 @@ function parseHTML(
 function parseToken(
   token: marked.Token,
   options: ParsingOptions
-): (KnownBlock | TableBlock)[] {
+): (KnownBlock | TableBlock | VideoBlock | FileBlock)[] {
   switch (token.type) {
     case 'heading':
       return [parseHeading(token)];
@@ -725,6 +836,6 @@ function parseToken(
 export function parseBlocks(
   tokens: marked.TokensList,
   options: ParsingOptions = {}
-): (KnownBlock | TableBlock)[] {
+): (KnownBlock | TableBlock | VideoBlock | FileBlock)[] {
   return tokens.flatMap(token => parseToken(token, options));
 }

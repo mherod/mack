@@ -3,7 +3,7 @@ import {parseBlocks} from './parser/internal';
 import type {ParsingOptions} from './types';
 import {marked} from 'marked';
 import {validateInput, validateBlockCount, MAX_BLOCKS} from './validation';
-import type {TableBlock} from './slack';
+import type {TableBlock, VideoBlock, FileBlock} from './slack';
 
 /**
  * Parses Markdown content into Slack BlockKit Blocks.
@@ -32,7 +32,7 @@ import type {TableBlock} from './slack';
 export async function markdownToBlocks(
   body: string,
   options: ParsingOptions = {}
-): Promise<(KnownBlock | TableBlock)[]> {
+): Promise<(KnownBlock | TableBlock | VideoBlock | FileBlock)[]> {
   // Validate input
   validateInput(body);
 
