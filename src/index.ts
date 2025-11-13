@@ -48,8 +48,8 @@ export async function markdownToBlocks(
 
   const lexer = new marked.Lexer();
   lexer.options.tokenizer = new marked.Tokenizer();
-  lexer.options.tokenizer.inlineText = src => {
-    const text = src.replace(/[&<>]/g, char => {
+  lexer.options.tokenizer.inlineText = (src: string): marked.Tokens.Text => {
+    const text = src.replace(/[&<>]/g, (char: string): string => {
       return replacements[char];
     });
 

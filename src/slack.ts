@@ -228,7 +228,7 @@ export function video(options: VideoBlockOptions): VideoBlock {
   }
 
   // Validate URLs
-  const isValidUrl = (url: string) => {
+  const isValidUrl = (url: string): boolean => {
     const isAbsoluteUrl =
       url.startsWith('http://') ||
       url.startsWith('https://') ||

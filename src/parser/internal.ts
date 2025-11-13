@@ -98,7 +98,7 @@ function parsePlainText(element: PhrasingToken): string[] {
     case 'em':
     case 'strong':
     case 'del':
-      return element.tokens.flatMap(child =>
+      return element.tokens.flatMap((child: marked.Token) =>
         parsePlainText(child as PhrasingToken)
       );
 
@@ -134,13 +134,13 @@ function parseMrkdwn(
         if (!href) {
           // URL is invalid, just return the link text without formatting
           return element.tokens
-            .flatMap(child =>
+            .flatMap((child: marked.Token) =>
               parseMrkdwn(child as Exclude<PhrasingToken, marked.Tokens.Image>)
             )
             .join('');
         }
         return `<${href}|${element.tokens
-          .flatMap(child =>
+          .flatMap((child: marked.Token) =>
             parseMrkdwn(child as Exclude<PhrasingToken, marked.Tokens.Image>)
           )
           .join('')}> `;
@@ -148,7 +148,7 @@ function parseMrkdwn(
 
       case 'em': {
         return `_${element.tokens
-          .flatMap(child =>
+          .flatMap((child: marked.Token) =>
             parseMrkdwn(child as Exclude<PhrasingToken, marked.Tokens.Image>)
           )
           .join('')}_`;
@@ -159,7 +159,7 @@ function parseMrkdwn(
 
       case 'strong': {
         return `*${element.tokens
-          .flatMap(child =>
+          .flatMap((child: marked.Token) =>
             parseMrkdwn(child as Exclude<PhrasingToken, marked.Tokens.Image>)
           )
           .join('')}*`;
@@ -170,7 +170,7 @@ function parseMrkdwn(
 
       case 'del': {
         return `~${element.tokens
-          .flatMap(child =>
+          .flatMap((child: marked.Token) =>
             parseMrkdwn(child as Exclude<PhrasingToken, marked.Tokens.Image>)
           )
           .join('')}~`;
@@ -216,7 +216,7 @@ function parsePhrasingContent(
   } else if (element.type === 'link') {
     // Check if this is a file link - check both URL and link text
     const linkText = element.tokens
-      .flatMap(child => parsePlainText(child as PhrasingToken))
+      .flatMap((child: marked.Token) => parsePlainText(child as PhrasingToken))
       .join('');
     const urlExtension = detectFileExtension(element.href);
     const textExtension = detectFileExtension(linkText);
@@ -248,16 +248,22 @@ function parsePhrasingContent(
 function parseParagraph(
   element: marked.Tokens.Paragraph
 ): (KnownBlock | FileBlock)[] {
-  return element.tokens.reduce((accumulator, child) => {
-    parsePhrasingContent(child as PhrasingToken, accumulator);
-    return accumulator;
-  }, [] as (SectionBlock | ImageBlock | FileBlock)[]);
+  return element.tokens.reduce<(SectionBlock | ImageBlock | FileBlock)[]>(
+    (
+      accumulator: (SectionBlock | ImageBlock | FileBlock)[],
+      child: marked.Token
+    ) => {
+      parsePhrasingContent(child as PhrasingToken, accumulator);
+      return accumulator;
+    },
+    []
+  );
 }
 
 function parseHeading(element: marked.Tokens.Heading): HeaderBlock {
   return header(
     element.tokens
-      .flatMap(child => parsePlainText(child as PhrasingToken))
+      .flatMap((child: marked.Token) => parsePlainText(child as PhrasingToken))
       .join('')
   );
 }
@@ -349,7 +355,7 @@ function tokensToRichTextElements(
 
       case 'strong': {
         const strongText = token.tokens
-          .map(t => (t as marked.Tokens.Text).text || '')
+          .map((t: marked.Token) => (t as marked.Tokens.Text).text || '')
           .join('');
         elements.push({
           type: 'text',
@@ -361,7 +367,7 @@ function tokensToRichTextElements(
 
       case 'em': {
         const emText = token.tokens
-          .map(t => (t as marked.Tokens.Text).text || '')
+          .map((t: marked.Token) => (t as marked.Tokens.Text).text || '')
           .join('');
         elements.push({
           type: 'text',
@@ -373,7 +379,7 @@ function tokensToRichTextElements(
 
       case 'del': {
         const delText = token.tokens
-          .map(t => (t as marked.Tokens.Text).text || '')
+          .map((t: marked.Token) => (t as marked.Tokens.Text).text || '')
           .join('');
         elements.push({
           type: 'text',
@@ -393,7 +399,7 @@ function tokensToRichTextElements(
 
       case 'link': {
         const linkText = token.tokens
-          .map(t => (t as marked.Tokens.Text).text || '')
+          .map((t: marked.Token) => (t as marked.Tokens.Text).text || '')
           .join('');
         if (validateUrl(token.href)) {
           elements.push({
@@ -439,7 +445,7 @@ function tokensToRichTextElements(
 // Parse a table cell to a TableCell object
 function parseTableCellToBlock(cell: marked.Tokens.TableCell): TableCell {
   // Check if cell contains complex formatting
-  const hasComplexFormatting = cell.tokens.some(token => {
+  const hasComplexFormatting = cell.tokens.some((token: marked.Token) => {
     const tokenType = (token as PhrasingToken).type;
     return ['strong', 'em', 'del', 'link', 'codespan'].includes(tokenType);
   });
@@ -459,7 +465,7 @@ function parseTableCellToBlock(cell: marked.Tokens.TableCell): TableCell {
   } else {
     // Use raw_text for simple text
     const text = cell.tokens
-      .map(token => {
+      .map((token: marked.Token) => {
         if ('text' in token) {
           return (token as marked.Tokens.Text).text;
         }
@@ -482,14 +488,16 @@ function parseTableRowsToBlocks(
   const tableRows: TableRow[] = [];
 
   // Parse header row
-  const headerRow: TableCell[] = header.map(cell =>
+  const headerRow: TableCell[] = header.map((cell: marked.Tokens.TableCell) =>
     parseTableCellToBlock(cell)
   );
   tableRows.push(headerRow);
 
   // Parse data rows
   for (const row of rows) {
-    const tableRow: TableCell[] = row.map(cell => parseTableCellToBlock(cell));
+    const tableRow: TableCell[] = row.map((cell: marked.Tokens.TableCell) =>
+      parseTableCellToBlock(cell)
+    );
     tableRows.push(tableRow);
   }
 
@@ -528,12 +536,12 @@ function parseBlockquote(
 ): (KnownBlock | TableBlock | VideoBlock | FileBlock | RichTextBlock)[] {
   // Check if blockquote contains only paragraph tokens (simple quote)
   const onlyParagraphs = element.tokens.every(
-    token => token.type === 'paragraph' || token.type === 'text'
+    (token: marked.Token) => token.type === 'paragraph' || token.type === 'text'
   );
 
   if (onlyParagraphs) {
     // First check if paragraphs contain file links by parsing them normally
-    const testBlocks = element.tokens.flatMap(token => {
+    const testBlocks = element.tokens.flatMap((token: marked.Token) => {
       if (token.type === 'paragraph') {
         return parseParagraph(token as marked.Tokens.Paragraph);
       }
@@ -541,7 +549,11 @@ function parseBlockquote(
     });
 
     // If any file blocks were generated, use the old approach
-    const hasFileBlocks = testBlocks.some(block => block.type === 'file');
+    const hasFileBlocks = testBlocks.some(
+      (
+        block: KnownBlock | TableBlock | VideoBlock | FileBlock | RichTextBlock
+      ) => block.type === 'file'
+    );
     if (hasFileBlocks) {
       // Fall through to the complex blockquote handling below
     } else {
@@ -582,7 +594,7 @@ function parseBlockquote(
   }
 
   // For complex blockquotes (with lists, code, etc.), use the old approach
-  const blocks = element.tokens.flatMap(token => {
+  const blocks = element.tokens.flatMap((token: marked.Token) => {
     if (token.type === 'paragraph') {
       return parseParagraph(token);
     } else if (token.type === 'list') {
@@ -602,12 +614,16 @@ function parseBlockquote(
   });
 
   // Add blockquote formatting to section blocks only
-  return blocks.map(block => {
-    if ('type' in block && block.type === 'section' && block.text?.text) {
-      block.text.text = '> ' + block.text.text.replace(/\n/g, '\n> ');
+  return blocks.map(
+    (
+      block: KnownBlock | TableBlock | VideoBlock | FileBlock | RichTextBlock
+    ) => {
+      if ('type' in block && block.type === 'section' && block.text?.text) {
+        block.text.text = '> ' + block.text.text.replace(/\n/g, '\n> ');
+      }
+      return block;
     }
-    return block;
-  });
+  );
 }
 
 function parseThematicBreak(): DividerBlock {
@@ -631,7 +647,9 @@ function extractTextFromHtmlElement(
     return element;
   }
   if (Array.isArray(element)) {
-    return element.map(e => extractTextFromHtmlElement(e)).join('');
+    return element
+      .map((e: XmlElement | string) => extractTextFromHtmlElement(e))
+      .join('');
   }
   if (element && element['#text']) {
     return element['#text'];
@@ -770,10 +788,17 @@ function parseHtmlTable(tableElement: HtmlTableElement): TableBlock | null {
     // Only create table if we have rows
     if (rows.length > 0) {
       // Clean up column settings - remove empty entries at the end
-      const cleanedSettings = columnSettings.filter((s, i) => {
-        // Keep settings if they have values or if there are values after them
-        return s.align || columnSettings.slice(i + 1).some(cs => cs.align);
-      });
+      const cleanedSettings = columnSettings.filter(
+        (setting: ColumnSetting, index: number) => {
+          // Keep settings if they have values or if there are values after them
+          return (
+            setting.align ||
+            columnSettings
+              .slice(index + 1)
+              .some((futureSetting: ColumnSetting) => futureSetting.align)
+          );
+        }
+      );
 
       return table(
         rows,
@@ -910,5 +935,5 @@ export function parseBlocks(
   tokens: marked.TokensList,
   options: ParsingOptions = {}
 ): (KnownBlock | TableBlock | VideoBlock | FileBlock | RichTextBlock)[] {
-  return tokens.flatMap(token => parseToken(token, options));
+  return tokens.flatMap((token: marked.Token) => parseToken(token, options));
 }
