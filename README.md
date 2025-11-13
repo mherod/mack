@@ -2,8 +2,10 @@
 
 > Convert Markdown and GitHub Flavoured Markdown to Slack BlockKit Blocks
 
-[![Node.js CI](https://github.com/rr-codes/mack/actions/workflows/ci.yml/badge.svg)](https://github.com/rr-codes/mack/actions/workflows/ci.yml)
+[![Node.js CI](https://github.com/mherod/mack/actions/workflows/ci.yml/badge.svg)](https://github.com/mherod/mack/actions/workflows/ci.yml)
 [![Code Style: Google](https://img.shields.io/badge/code%20style-google-blueviolet.svg)](https://github.com/google/gts)
+
+> **Note**: This is a fork of the original [Mack project by Fabric](https://github.com/tryfabric/mack), maintained by [@mherod](https://github.com/mherod) with additional features and improvements.
 
 Mack is a Markdown parser to convert any Markdown content to Slack BlockKit block objects.
 
@@ -35,13 +37,13 @@ Text is truncated to fit within the Slack API's limits.
 ## Installation
 
 ```
-npm install @tryfabric/mack
+npm install @mherod/mack
 ```
 
 ## Usage
 
 ```ts
-import {markdownToBlocks} from '@tryfabric/mack';
+import {markdownToBlocks} from '@mherod/mack';
 
 const blocks = markdownToBlocks(`
 # Hello world
