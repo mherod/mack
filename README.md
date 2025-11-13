@@ -1,81 +1,247 @@
-# Mack: Markdown to Slack Message Blocks
+# Mack: Markdown to Slack BlockKit
 
-> Convert Markdown and GitHub Flavoured Markdown to Slack BlockKit Blocks
+> Convert Markdown to native Slack BlockKit blocks with rich formatting support
 
 [![Node.js CI](https://github.com/mherod/mack/actions/workflows/ci.yml/badge.svg)](https://github.com/mherod/mack/actions/workflows/ci.yml)
 [![Code Style: Google](https://img.shields.io/badge/code%20style-google-blueviolet.svg)](https://github.com/google/gts)
+[![npm version](https://img.shields.io/npm/v/@mherod/mack.svg)](https://www.npmjs.com/package/@mherod/mack)
 
-> **Note**: This is a fork of the original [Mack project by Fabric](https://github.com/tryfabric/mack), maintained by [@mherod](https://github.com/mherod) with additional features and improvements.
+> **Note**: This is a fork of the original [Mack project by Fabric](https://github.com/tryfabric/mack), maintained by [@mherod](https://github.com/mherod) with enhanced features and native Slack block support.
 
-Mack is a Markdown parser to convert any Markdown content to Slack BlockKit block objects.
+A TypeScript library for parsing Markdown and GitHub Flavoured Markdown into Slack's BlockKit format. Mack leverages native Slack blocks for superior rendering quality.
 
-Text is truncated to fit within the Slack API's limits.
+## Features
 
-### Supported Markdown Elements
+### Native Slack Blocks
 
-- All inline elements (italics, bold, strikethrough, inline code, hyperlinks)
-- Lists (ordered, unordered, checkboxes, nested lists)
-- All headers
-- Code blocks
-- Block quotes (now supports lists, headings, code blocks, and nested quotes)
-- Images
-- Thematic Breaks / Dividers
-- **Tables with native Slack Table blocks**
-  - Rich text formatting in cells (bold, italic, links, code)
-  - Column alignment (left, center, right)
-  - Automatic cell format detection
+- **Lists** → `rich_text_list` blocks with proper visual structure
+- **Code blocks** → `rich_text_preformatted` for improved syntax presentation
+- **Blockquotes** → `rich_text_quote` for cleaner formatting
+- **Tables** → Native Slack table blocks with column alignment and rich formatting
 
-### Enhanced Features
+### Comprehensive Markdown Support
 
-- **Native Table Blocks**: Tables are now rendered as native Slack Table blocks with full formatting support
-  - Both Markdown and HTML tables are supported
-- **Rich Block Quotes**: Blockquotes can contain lists, code blocks, headings, and nested quotes
-- **Military-Grade Robustness**: Comprehensive error handling, input validation, and security features
-- **Safe Text Truncation**: UTF-8 aware truncation that respects character boundaries
-- **HTML Table Support**: Automatically converts HTML `<table>` elements to native Slack Table blocks
+- **Inline formatting**: bold, italic, strikethrough, inline code, hyperlinks
+- **Lists**: ordered, unordered, checkbox (with ✅/☐ indicators), nested lists
+- **Headings**: All heading levels (rendered as Slack headers)
+- **Code blocks**: With optional language hints
+- **Blockquotes**: Simple quotes and complex quotes with lists, code, and nesting
+- **Images**: Both Markdown and HTML syntax
+- **Tables**: Markdown and HTML tables with rich text formatting in cells
+- **Media**: Video embeds and file attachments
+- **Horizontal rules**: Divider blocks
+
+### Robust Parsing
+
+- UTF-8 aware text truncation respecting Slack's API limits
+- Comprehensive error handling with graceful degradation
+- URL validation and security features
+- Recursion depth protection
+- 223 test cases with full coverage
 
 ## Installation
 
-```
+```bash
 npm install @mherod/mack
 ```
 
-## Usage
+## Quick Start
 
-```ts
+```typescript
 import {markdownToBlocks} from '@mherod/mack';
 
-const blocks = markdownToBlocks(`
-# Hello world
+const markdown = `
+# Hello World
 
-* bulleted item 1
-* bulleted item 2
+A simple example with **bold** and _italic_ text.
 
-abc _123_
+- Task list items
+- [x] Completed task
+- [ ] Pending task
 
-![cat](https://images.unsplash.com/photo-1574158622682-e40e69881006)
-`);
+\`\`\`typescript
+const greeting = 'Hello, Slack!';
+console.log(greeting);
+\`\`\`
+`;
+
+const blocks = await markdownToBlocks(markdown);
+
+// Send to Slack
+await client.chat.postMessage({
+  channel: '#general',
+  blocks: blocks,
+});
 ```
 
-The `blocks` object now results in [this](https://app.slack.com/block-kit-builder/T01BFUV9UPJ#%7B%22blocks%22:%5B%7B%22text%22:%7B%22text%22:%22Hello%20world%22,%22type%22:%22plain_text%22%7D,%22type%22:%22header%22%7D,%7B%22text%22:%7B%22text%22:%22•%20bulleted%20item%201%5Cn•%20bulleted%20item%202%22,%22type%22:%22mrkdwn%22%7D,%22type%22:%22section%22%7D,%7B%22text%22:%7B%22text%22:%22abc%20_123_%22,%22type%22:%22mrkdwn%22%7D,%22type%22:%22section%22%7D,%7B%22alt_text%22:%22cat%22,%22image_url%22:%22https://images.unsplash.com/photo-1574158622682-e40e69881006?w=640%22,%22type%22:%22image%22%7D%5D%7D) payload.
+## Examples
+
+### Lists
+
+```typescript
+const markdown = `
+- Bullet point one
+- Bullet point two
+
+1. Numbered item
+2. Another item
+
+- [x] Completed task
+- [ ] Pending task
+`;
+
+const blocks = await markdownToBlocks(markdown);
+// Renders as native rich_text_list blocks with proper formatting
+```
+
+### Code Blocks
+
+```typescript
+const markdown = `
+\`\`\`javascript
+function greet(name) {
+  return \`Hello, \${name}!\`;
+}
+\`\`\`
+`;
+
+const blocks = await markdownToBlocks(markdown);
+// Renders as rich_text_preformatted block
+```
+
+### Tables
+
+```typescript
+const markdown = `
+| Feature | Status | Priority |
+|---------|:------:|---------:|
+| Lists   | ✅     | High     |
+| Tables  | ✅     | High     |
+| Images  | ✅     | Medium   |
+`;
+
+const blocks = await markdownToBlocks(markdown);
+// Renders as native Slack table block with alignment
+```
+
+### Blockquotes
+
+```typescript
+const markdown = `
+> This is a simple quote with **bold** text.
+
+> Complex quote:
+> - With lists
+> - And formatting
+`;
+
+const blocks = await markdownToBlocks(markdown);
+// Simple quotes render as rich_text_quote
+// Complex quotes render with proper nesting
+```
 
 ## API
 
-`function markdownToBlocks(text: string, options: ParsingOptions): KnownBlock[]`
+### `markdownToBlocks(markdown, options?)`
 
-- `text`: the content to parse
-- `options`: the options to use when parsing.
+Converts Markdown to Slack BlockKit blocks.
 
-### Parsing Options
+**Parameters:**
+- `markdown` (string): The Markdown content to parse
+- `options` (ParsingOptions, optional): Configuration options
 
-```ts
+**Returns:** `Promise<Block[]>` - Array of Slack BlockKit blocks
+
+**Throws:**
+- `ValidationError`: Invalid input or content exceeding limits
+- `BlockLimitError`: Block count exceeds Slack's 50 block maximum
+- `ParseError`: Parsing failures
+
+### Options
+
+```typescript
 interface ParsingOptions {
-  // Configure how lists are displayed
   lists?: ListOptions;
 }
 
 interface ListOptions {
-  // Configure how checkbox list items are displayed. By default, they are prefixed with '* '
+  // Customize checkbox prefixes (default: ✅ for checked, ☐ for unchecked)
   checkboxPrefix?: (checked: boolean) => string;
 }
 ```
+
+**Example:**
+
+```typescript
+const blocks = await markdownToBlocks(markdown, {
+  lists: {
+    checkboxPrefix: (checked) => checked ? '[x] ' : '[ ] '
+  }
+});
+```
+
+## Block Types
+
+Mack generates the following Slack block types:
+
+| Markdown Element | Slack Block Type |
+|-----------------|------------------|
+| Headings | `header` |
+| Paragraphs | `section` with `mrkdwn` |
+| Lists | `rich_text` with `rich_text_list` |
+| Code blocks | `rich_text` with `rich_text_preformatted` |
+| Blockquotes | `rich_text` with `rich_text_quote` |
+| Images | `image` |
+| Tables | `table` |
+| Horizontal rules | `divider` |
+| Videos | `video` |
+| File attachments | `file` |
+
+## Limitations
+
+- **Nested lists**: Currently flattened within a single `rich_text_list` block
+- **Checkbox interactivity**: Checkboxes render as static text with emoji indicators (not interactive)
+- **Block limit**: Slack enforces a maximum of 50 blocks per message
+- **Text limits**: Section blocks limited to 3000 characters, headers to 150 characters
+
+## Development
+
+```bash
+# Install dependencies
+npm install
+
+# Run tests
+npm test
+
+# Build
+npm run compile
+
+# Lint
+npm run lint
+
+# Fix linting issues
+npm run fix
+```
+
+## Contributing
+
+Contributions are welcome! Please ensure:
+
+1. All tests pass (`npm test`)
+2. Code follows Google TypeScript Style (`npm run lint`)
+3. New features include test coverage
+4. Breaking changes are clearly documented
+
+## Credits
+
+- Original project by [Fabric](https://github.com/tryfabric/mack)
+- Enhanced and maintained by [Matthew Herod](https://github.com/mherod)
+- Built with [marked](https://marked.js.org/) for Markdown parsing
+
+## License
+
+MIT License - see [LICENSE](LICENSE) file for details.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for version history and release notes.
