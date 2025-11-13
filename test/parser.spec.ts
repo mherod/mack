@@ -113,9 +113,27 @@ describe('parser', () => {
     const actual = parseBlocks(tokens);
 
     const expected = [
-      slack.section('1. a\n2. b'),
-      slack.section('• c\n• d'),
-      slack.section('• e\n• f'),
+      slack.richTextList(
+        [
+          {type: 'rich_text_section', elements: [{type: 'text', text: 'a'}]},
+          {type: 'rich_text_section', elements: [{type: 'text', text: 'b'}]},
+        ],
+        'ordered'
+      ),
+      slack.richTextList(
+        [
+          {type: 'rich_text_section', elements: [{type: 'text', text: 'c'}]},
+          {type: 'rich_text_section', elements: [{type: 'text', text: 'd'}]},
+        ],
+        'bullet'
+      ),
+      slack.richTextList(
+        [
+          {type: 'rich_text_section', elements: [{type: 'text', text: 'e'}]},
+          {type: 'rich_text_section', elements: [{type: 'text', text: 'f'}]},
+        ],
+        'bullet'
+      ),
     ];
 
     expect(actual).toStrictEqual(expected);

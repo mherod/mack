@@ -1,8 +1,18 @@
 import {markdownToBlocks} from '../src';
 import type {KnownBlock} from '@slack/types';
-import type {TableBlock, VideoBlock, FileBlock} from '../src/slack';
+import type {
+  TableBlock,
+  VideoBlock,
+  FileBlock,
+  RichTextBlock,
+} from '../src/slack';
 
-type SlackBlock = KnownBlock | TableBlock | VideoBlock | FileBlock;
+type SlackBlock =
+  | KnownBlock
+  | TableBlock
+  | VideoBlock
+  | FileBlock
+  | RichTextBlock;
 
 /**
  * Helper to generate a Slack Block Kit Builder URL for easy testing

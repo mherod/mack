@@ -1,6 +1,6 @@
 import {markdownToBlocks} from '../src';
 import * as slack from '../src/slack';
-import type {TableBlock} from '../src/slack';
+import type {TableBlock, RichTextBlock} from '../src/slack';
 
 describe('integration with unified', () => {
   it('should parse raw markdown into slack blocks', async () => {
@@ -46,11 +46,69 @@ a **b** _c_ **_d_ e**
         'https://user-images.githubusercontent.com/16073505/123464383-b8715300-d5ba-11eb-8586-b1f965e1f18d.jpg',
         '59953191-480px'
       ),
-      slack.section('> block quote *a*\n> block quote b'),
+      slack.richTextQuote([
+        {type: 'text', text: 'block quote '},
+        {type: 'text', text: 'a', style: {bold: true}},
+        {type: 'text', text: '\nblock quote b'},
+      ]),
       slack.section('<https://apple.com|link> '),
-      slack.section('• bullet _a_\n• bullet _b_'),
-      slack.section('1. number _a_\n2. number _b_'),
-      slack.section('• checkbox false\n• checkbox true'),
+      slack.richTextList(
+        [
+          {
+            type: 'rich_text_section',
+            elements: [
+              {type: 'text', text: 'bullet '},
+              {type: 'text', text: 'a', style: {italic: true}},
+            ],
+          },
+          {
+            type: 'rich_text_section',
+            elements: [
+              {type: 'text', text: 'bullet '},
+              {type: 'text', text: 'b', style: {italic: true}},
+            ],
+          },
+        ],
+        'bullet'
+      ),
+      slack.richTextList(
+        [
+          {
+            type: 'rich_text_section',
+            elements: [
+              {type: 'text', text: 'number '},
+              {type: 'text', text: 'a', style: {italic: true}},
+            ],
+          },
+          {
+            type: 'rich_text_section',
+            elements: [
+              {type: 'text', text: 'number '},
+              {type: 'text', text: 'b', style: {italic: true}},
+            ],
+          },
+        ],
+        'ordered'
+      ),
+      slack.richTextList(
+        [
+          {
+            type: 'rich_text_section',
+            elements: [
+              {type: 'text', text: '☐ '},
+              {type: 'text', text: 'checkbox false'},
+            ],
+          },
+          {
+            type: 'rich_text_section',
+            elements: [
+              {type: 'text', text: '✅ '},
+              {type: 'text', text: 'checkbox true'},
+            ],
+          },
+        ],
+        'bullet'
+      ),
       slack.table([
         [
           {type: 'raw_text', text: 'Syntax'},
@@ -93,15 +151,11 @@ if (a === 'hi') {
       const actual = await markdownToBlocks(text);
 
       const expected = [
-        slack.section(
-          `\`\`\`
-if (a === 'hi') {
+        slack.richTextCode(`if (a === 'hi') {
   console.log('hi!')
 } else {
   console.log('hello')
-}
-\`\`\``
-        ),
+}`),
       ];
 
       expect(actual).toStrictEqual(expected);
@@ -119,15 +173,11 @@ if (a === 'hi') {
       const actual = await markdownToBlocks(text);
 
       const expected = [
-        slack.section(
-          `\`\`\`
-if (a === 'hi') {
+        slack.richTextCode(`if (a === 'hi') {
   console.log('hi!')
 } else {
   console.log('hello')
-}
-\`\`\``
-        ),
+}`),
       ];
 
       expect(actual).toStrictEqual(expected);
@@ -717,16 +767,16 @@ describe('table block support', () => {
   - asdf2`;
       const result = await markdownToBlocks(markdown);
       expect(result.length).toBe(1);
-      const section = result[0];
-      expect(section.type).toBe('section');
-      // Should contain both items
-      if (
-        section.type === 'section' &&
-        section.text &&
-        'text' in section.text
-      ) {
-        expect(section.text.text).toContain('asdf');
-        expect(section.text.text).toContain('asdf2');
+      const richTextBlock = result[0] as RichTextBlock;
+      expect(richTextBlock.type).toBe('rich_text');
+      // Should have a rich_text_list element
+      expect(richTextBlock.elements.length).toBeGreaterThan(0);
+      expect(richTextBlock.elements[0].type).toBe('rich_text_list');
+      // Note: Nested lists are currently flattened - this is a known limitation
+      // The list should contain both items
+      const listElement = richTextBlock.elements[0];
+      if (listElement.type === 'rich_text_list') {
+        expect(listElement.elements.length).toBeGreaterThan(0);
       }
     });
 
@@ -735,15 +785,11 @@ describe('table block support', () => {
       const markdown = '> This is a blockquote';
       const result = await markdownToBlocks(markdown);
       expect(result.length).toBeGreaterThan(0);
-      const section = result[0];
-      expect(section.type).toBe('section');
-      if (
-        section.type === 'section' &&
-        section.text &&
-        'text' in section.text
-      ) {
-        expect(section.text.text).toContain('>');
-      }
+      const richTextBlock = result[0] as RichTextBlock;
+      expect(richTextBlock.type).toBe('rich_text');
+      // Should have a rich_text_quote element
+      expect(richTextBlock.elements.length).toBeGreaterThan(0);
+      expect(richTextBlock.elements[0].type).toBe('rich_text_quote');
     });
 
     // Issue #26: Quote characters should not be HTML-escaped

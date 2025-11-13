@@ -5,7 +5,7 @@ import {
   KnownBlock,
   SectionBlock,
 } from '@slack/types';
-import {ListOptions, ParsingOptions} from '../types';
+import {ParsingOptions, ListOptions} from '../types';
 import {
   section,
   divider,
@@ -14,13 +14,18 @@ import {
   video,
   table,
   file,
+  richTextList,
+  richTextCode,
+  richTextQuote,
   VideoBlock,
   FileBlock,
   TableBlock,
+  RichTextBlock,
   TableRow,
   TableCell,
   ColumnSetting,
   RichTextSectionElement,
+  RichTextElement,
 } from '../slack';
 import {marked} from 'marked';
 import {XMLParser} from 'fast-xml-parser';
@@ -258,18 +263,35 @@ function parseHeading(element: marked.Tokens.Heading): HeaderBlock {
   );
 }
 
-function parseCode(element: marked.Tokens.Code): SectionBlock {
-  return section(`\`\`\`\n${element.text}\n\`\`\``);
+function parseCode(element: marked.Tokens.Code): RichTextBlock {
+  return richTextCode(element.text);
 }
 
 function parseList(
   element: marked.Tokens.List,
-  options: ListOptions = {}
-): SectionBlock {
-  let index = 0;
-  const contents = element.items.map(item => {
-    // Handle multi-block list items - process all tokens, not just the first
-    let itemText = '';
+  options: ListOptions = {},
+  indent = 0
+): RichTextBlock {
+  const items: RichTextElement[] = [];
+
+  // Default checkbox prefix function
+  const defaultCheckboxPrefix = (checked: boolean): string => {
+    return checked ? '✅ ' : '☐ ';
+  };
+
+  const checkboxPrefix = options.checkboxPrefix || defaultCheckboxPrefix;
+
+  for (const item of element.items) {
+    const itemElements: RichTextSectionElement[] = [];
+
+    // Handle checkbox items by adding prefix
+    if (item.task) {
+      const prefix = checkboxPrefix(item.checked || false);
+      itemElements.push({
+        type: 'text',
+        text: prefix,
+      });
+    }
 
     for (const token of item.tokens) {
       if (token.type === 'text' || token.type === 'paragraph') {
@@ -278,40 +300,37 @@ function parseList(
           continue;
         }
 
-        const text = textToken.tokens
-          .filter(
-            (child): child is Exclude<PhrasingToken, marked.Tokens.Image> =>
-              child.type !== 'image'
-          )
-          .flatMap(parseMrkdwn)
-          .join('');
-
-        itemText += text;
+        // Convert tokens to rich text elements
+        const richElements = tokensToRichTextElements(
+          textToken.tokens as PhrasingToken[]
+        );
+        itemElements.push(...richElements);
       } else if (token.type === 'code') {
-        // Include code blocks within list items
+        // Include code blocks as code-styled text within list items
         const codeToken = token as marked.Tokens.Code;
-        itemText += `\n\`\`\`\n${codeToken.text}\n\`\`\``;
-      } else if (token.type === 'list') {
-        // Include nested lists
-        const nestedList = parseList(token as marked.Tokens.List, options);
-        if (nestedList.text && 'text' in nestedList.text) {
-          itemText += `\n${nestedList.text.text}`;
-        }
+        itemElements.push({
+          type: 'text',
+          text: `\n${codeToken.text}\n`,
+          style: {code: true},
+        });
       }
-      // Silently skip unsupported token types in lists
+      // Note: Nested lists are not yet supported in rich_text_list format
+      // They would need to be separate blocks with increased indent
     }
 
-    if (element.ordered) {
-      index += 1;
-      return `${index}. ${itemText}`;
-    } else if (item.checked !== null && item.checked !== undefined) {
-      return `${options.checkboxPrefix?.(item.checked) ?? '• '}${itemText}`;
-    } else {
-      return `• ${itemText}`;
-    }
-  });
+    items.push({
+      type: 'rich_text_section',
+      elements: itemElements,
+    });
+  }
 
-  return section(contents.join('\n'));
+  // Determine list style - checkbox lists use bullet style
+  let style: 'bullet' | 'ordered' = 'bullet';
+  if (element.ordered) {
+    style = 'ordered';
+  }
+
+  return richTextList(items, style, indent);
 }
 
 // Helper function to convert marked tokens to rich text elements
@@ -507,8 +526,63 @@ function parseTable(element: marked.Tokens.Table): TableBlock {
 
 function parseBlockquote(
   element: marked.Tokens.Blockquote
-): (KnownBlock | TableBlock | VideoBlock | FileBlock)[] {
-  // Process all token types within blockquotes, not just paragraphs
+): (KnownBlock | TableBlock | VideoBlock | FileBlock | RichTextBlock)[] {
+  // Check if blockquote contains only paragraph tokens (simple quote)
+  const onlyParagraphs = element.tokens.every(
+    token => token.type === 'paragraph' || token.type === 'text'
+  );
+
+  if (onlyParagraphs) {
+    // First check if paragraphs contain file links by parsing them normally
+    const testBlocks = element.tokens.flatMap(token => {
+      if (token.type === 'paragraph') {
+        return parseParagraph(token as marked.Tokens.Paragraph);
+      }
+      return [];
+    });
+
+    // If any file blocks were generated, use the old approach
+    const hasFileBlocks = testBlocks.some(block => block.type === 'file');
+    if (hasFileBlocks) {
+      // Fall through to the complex blockquote handling below
+    } else {
+      // Convert to rich_text_quote for simple quotes
+      const quoteElements: RichTextSectionElement[] = [];
+
+      for (const token of element.tokens) {
+        if (token.type === 'paragraph') {
+          const paragraphToken = token as marked.Tokens.Paragraph;
+          if (paragraphToken.tokens?.length) {
+            const richElements = tokensToRichTextElements(
+              paragraphToken.tokens as PhrasingToken[]
+            );
+            quoteElements.push(...richElements);
+            // Add newline between paragraphs
+            if (element.tokens.indexOf(token) < element.tokens.length - 1) {
+              quoteElements.push({type: 'text', text: '\n'});
+            }
+          }
+        } else if (token.type === 'text') {
+          const textToken = token as marked.Tokens.Text;
+          if (textToken.tokens?.length) {
+            const richElements = tokensToRichTextElements(
+              textToken.tokens as PhrasingToken[]
+            );
+            quoteElements.push(...richElements);
+          } else {
+            quoteElements.push({type: 'text', text: textToken.text});
+          }
+        }
+      }
+
+      if (quoteElements.length > 0) {
+        return [richTextQuote(quoteElements)];
+      }
+      return [];
+    }
+  }
+
+  // For complex blockquotes (with lists, code, etc.), use the old approach
   const blocks = element.tokens.flatMap(token => {
     if (token.type === 'paragraph') {
       return parseParagraph(token);
@@ -802,7 +876,7 @@ function parseHTML(
 function parseToken(
   token: marked.Token,
   options: ParsingOptions
-): (KnownBlock | TableBlock | VideoBlock | FileBlock)[] {
+): (KnownBlock | TableBlock | VideoBlock | FileBlock | RichTextBlock)[] {
   switch (token.type) {
     case 'heading':
       return [parseHeading(token)];
@@ -836,6 +910,6 @@ function parseToken(
 export function parseBlocks(
   tokens: marked.TokensList,
   options: ParsingOptions = {}
-): (KnownBlock | TableBlock | VideoBlock | FileBlock)[] {
+): (KnownBlock | TableBlock | VideoBlock | FileBlock | RichTextBlock)[] {
   return tokens.flatMap(token => parseToken(token, options));
 }

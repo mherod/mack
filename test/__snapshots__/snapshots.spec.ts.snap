@@ -55,34 +55,55 @@ exports[`Snapshot Tests Block Quotes should render blockquote with formatting 1`
 "{
   "blocks": [
     {
-      "type": "section",
-      "text": {
-        "type": "mrkdwn",
-        "text": "> *Bold quote* with _italic_ text"
-      }
+      "type": "rich_text",
+      "elements": [
+        {
+          "type": "rich_text_quote",
+          "elements": [
+            {
+              "type": "text",
+              "text": "Bold quote",
+              "style": {
+                "bold": true
+              }
+            },
+            {
+              "type": "text",
+              "text": " with _italic_ text"
+            }
+          ]
+        }
+      ]
     }
   ]
 }
 
 // Block Kit Builder URL:
-// https://app.slack.com/block-kit-builder/#%7B%22blocks%22%3A%5B%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%22%3E%20*Bold%20quote*%20with%20_italic_%20text%22%7D%7D%5D%7D"
+// https://app.slack.com/block-kit-builder/#%7B%22blocks%22%3A%5B%7B%22type%22%3A%22rich_text%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22rich_text_quote%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22Bold%20quote%22%2C%22style%22%3A%7B%22bold%22%3Atrue%7D%7D%2C%7B%22type%22%3A%22text%22%2C%22text%22%3A%22%20with%20_italic_%20text%22%7D%5D%7D%5D%7D%5D%7D"
 `;
 
 exports[`Snapshot Tests Block Quotes should render multi-line blockquote 1`] = `
 "{
   "blocks": [
     {
-      "type": "section",
-      "text": {
-        "type": "mrkdwn",
-        "text": "> First line\\n> Second line\\n> Third line"
-      }
+      "type": "rich_text",
+      "elements": [
+        {
+          "type": "rich_text_quote",
+          "elements": [
+            {
+              "type": "text",
+              "text": "First line\\nSecond line\\nThird line"
+            }
+          ]
+        }
+      ]
     }
   ]
 }
 
 // Block Kit Builder URL:
-// https://app.slack.com/block-kit-builder/#%7B%22blocks%22%3A%5B%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%22%3E%20First%20line%5Cn%3E%20Second%20line%5Cn%3E%20Third%20line%22%7D%7D%5D%7D"
+// https://app.slack.com/block-kit-builder/#%7B%22blocks%22%3A%5B%7B%22type%22%3A%22rich_text%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22rich_text_quote%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22First%20line%5CnSecond%20line%5CnThird%20line%22%7D%5D%7D%5D%7D%5D%7D"
 `;
 
 exports[`Snapshot Tests Block Quotes should render nested blockquote content 1`] = `
@@ -96,85 +117,136 @@ exports[`Snapshot Tests Block Quotes should render nested blockquote content 1`]
       }
     },
     {
-      "type": "section",
-      "text": {
-        "type": "mrkdwn",
-        "text": "> • Item 1\\n> • Item 2"
-      }
+      "type": "rich_text",
+      "elements": [
+        {
+          "type": "rich_text_list",
+          "style": "bullet",
+          "indent": 0,
+          "elements": [
+            {
+              "type": "rich_text_section",
+              "elements": [
+                {
+                  "type": "text",
+                  "text": "Item 1"
+                }
+              ]
+            },
+            {
+              "type": "rich_text_section",
+              "elements": [
+                {
+                  "type": "text",
+                  "text": "Item 2"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ]
 }
 
 // Block Kit Builder URL:
-// https://app.slack.com/block-kit-builder/#%7B%22blocks%22%3A%5B%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%22%3E%20Quote%20with%20list%3A%22%7D%7D%2C%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%22%3E%20%E2%80%A2%20Item%201%5Cn%3E%20%E2%80%A2%20Item%202%22%7D%7D%5D%7D"
+// https://app.slack.com/block-kit-builder/#%7B%22blocks%22%3A%5B%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%22%3E%20Quote%20with%20list%3A%22%7D%7D%2C%7B%22type%22%3A%22rich_text%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22rich_text_list%22%2C%22style%22%3A%22bullet%22%2C%22indent%22%3A0%2C%22elements%22%3A%5B%7B%22type%22%3A%22rich_text_section%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22Item%201%22%7D%5D%7D%2C%7B%22type%22%3A%22rich_text_section%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22Item%202%22%7D%5D%7D%5D%7D%5D%7D%5D%7D"
 `;
 
 exports[`Snapshot Tests Block Quotes should render simple blockquote 1`] = `
 "{
   "blocks": [
     {
-      "type": "section",
-      "text": {
-        "type": "mrkdwn",
-        "text": "> This is a quote"
-      }
+      "type": "rich_text",
+      "elements": [
+        {
+          "type": "rich_text_quote",
+          "elements": [
+            {
+              "type": "text",
+              "text": "This is a quote"
+            }
+          ]
+        }
+      ]
     }
   ]
 }
 
 // Block Kit Builder URL:
-// https://app.slack.com/block-kit-builder/#%7B%22blocks%22%3A%5B%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%22%3E%20This%20is%20a%20quote%22%7D%7D%5D%7D"
+// https://app.slack.com/block-kit-builder/#%7B%22blocks%22%3A%5B%7B%22type%22%3A%22rich_text%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22rich_text_quote%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22This%20is%20a%20quote%22%7D%5D%7D%5D%7D%5D%7D"
 `;
 
 exports[`Snapshot Tests Code Blocks should render code block with TypeScript 1`] = `
 "{
   "blocks": [
     {
-      "type": "section",
-      "text": {
-        "type": "mrkdwn",
-        "text": "\`\`\`\\ninterface User {\\n  name: string;\\n  age: number;\\n}\\n\`\`\`"
-      }
+      "type": "rich_text",
+      "elements": [
+        {
+          "type": "rich_text_preformatted",
+          "elements": [
+            {
+              "type": "text",
+              "text": "interface User {\\n  name: string;\\n  age: number;\\n}"
+            }
+          ]
+        }
+      ]
     }
   ]
 }
 
 // Block Kit Builder URL:
-// https://app.slack.com/block-kit-builder/#%7B%22blocks%22%3A%5B%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%22%60%60%60%5Cninterface%20User%20%7B%5Cn%20%20name%3A%20string%3B%5Cn%20%20age%3A%20number%3B%5Cn%7D%5Cn%60%60%60%22%7D%7D%5D%7D"
+// https://app.slack.com/block-kit-builder/#%7B%22blocks%22%3A%5B%7B%22type%22%3A%22rich_text%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22rich_text_preformatted%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22interface%20User%20%7B%5Cn%20%20name%3A%20string%3B%5Cn%20%20age%3A%20number%3B%5Cn%7D%22%7D%5D%7D%5D%7D%5D%7D"
 `;
 
 exports[`Snapshot Tests Code Blocks should render code block with language 1`] = `
 "{
   "blocks": [
     {
-      "type": "section",
-      "text": {
-        "type": "mrkdwn",
-        "text": "\`\`\`\\nfunction hello() {\\n  console.log(\\"world\\");\\n}\\n\`\`\`"
-      }
+      "type": "rich_text",
+      "elements": [
+        {
+          "type": "rich_text_preformatted",
+          "elements": [
+            {
+              "type": "text",
+              "text": "function hello() {\\n  console.log(\\"world\\");\\n}"
+            }
+          ]
+        }
+      ]
     }
   ]
 }
 
 // Block Kit Builder URL:
-// https://app.slack.com/block-kit-builder/#%7B%22blocks%22%3A%5B%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%22%60%60%60%5Cnfunction%20hello()%20%7B%5Cn%20%20console.log(%5C%22world%5C%22)%3B%5Cn%7D%5Cn%60%60%60%22%7D%7D%5D%7D"
+// https://app.slack.com/block-kit-builder/#%7B%22blocks%22%3A%5B%7B%22type%22%3A%22rich_text%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22rich_text_preformatted%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22function%20hello()%20%7B%5Cn%20%20console.log(%5C%22world%5C%22)%3B%5Cn%7D%22%7D%5D%7D%5D%7D%5D%7D"
 `;
 
 exports[`Snapshot Tests Code Blocks should render simple code block 1`] = `
 "{
   "blocks": [
     {
-      "type": "section",
-      "text": {
-        "type": "mrkdwn",
-        "text": "\`\`\`\\nfunction hello() {\\n  console.log(\\"world\\");\\n}\\n\`\`\`"
-      }
+      "type": "rich_text",
+      "elements": [
+        {
+          "type": "rich_text_preformatted",
+          "elements": [
+            {
+              "type": "text",
+              "text": "function hello() {\\n  console.log(\\"world\\");\\n}"
+            }
+          ]
+        }
+      ]
     }
   ]
 }
 
 // Block Kit Builder URL:
-// https://app.slack.com/block-kit-builder/#%7B%22blocks%22%3A%5B%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%22%60%60%60%5Cnfunction%20hello()%20%7B%5Cn%20%20console.log(%5C%22world%5C%22)%3B%5Cn%7D%5Cn%60%60%60%22%7D%7D%5D%7D"
+// https://app.slack.com/block-kit-builder/#%7B%22blocks%22%3A%5B%7B%22type%22%3A%22rich_text%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22rich_text_preformatted%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22function%20hello()%20%7B%5Cn%20%20console.log(%5C%22world%5C%22)%3B%5Cn%7D%22%7D%5D%7D%5D%7D%5D%7D"
 `;
 
 exports[`Snapshot Tests Complex Documents should render announcement 1`] = `
@@ -202,11 +274,43 @@ exports[`Snapshot Tests Complex Documents should render announcement 1`] = `
       }
     },
     {
-      "type": "section",
-      "text": {
-        "type": "mrkdwn",
-        "text": "• Improved performance\\n• Better error handling\\n• New API endpoints"
-      }
+      "type": "rich_text",
+      "elements": [
+        {
+          "type": "rich_text_list",
+          "style": "bullet",
+          "indent": 0,
+          "elements": [
+            {
+              "type": "rich_text_section",
+              "elements": [
+                {
+                  "type": "text",
+                  "text": "Improved performance"
+                }
+              ]
+            },
+            {
+              "type": "rich_text_section",
+              "elements": [
+                {
+                  "type": "text",
+                  "text": "Better error handling"
+                }
+              ]
+            },
+            {
+              "type": "rich_text_section",
+              "elements": [
+                {
+                  "type": "text",
+                  "text": "New API endpoints"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     },
     {
       "type": "section",
@@ -219,7 +323,7 @@ exports[`Snapshot Tests Complex Documents should render announcement 1`] = `
 }
 
 // Block Kit Builder URL:
-// https://app.slack.com/block-kit-builder/#%7B%22blocks%22%3A%5B%7B%22type%22%3A%22header%22%2C%22text%22%3A%7B%22type%22%3A%22plain_text%22%2C%22text%22%3A%22%F0%9F%8E%89%20New%20Release%20v2.0%22%7D%7D%2C%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%22We're%20excited%20to%20announce%20**version%202.0**%20is%20now%20available!%22%7D%7D%2C%7B%22type%22%3A%22header%22%2C%22text%22%3A%7B%22type%22%3A%22plain_text%22%2C%22text%22%3A%22What's%20New%22%7D%7D%2C%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%22%E2%80%A2%20Improved%20performance%5Cn%E2%80%A2%20Better%20error%20handling%5Cn%E2%80%A2%20New%20API%20endpoints%22%7D%7D%2C%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%22Try%20it%20out%3A%20%5BDownload%20Now%5D(https%3A%2F%2Fexample.com%2Fdownload)%22%7D%7D%5D%7D"
+// https://app.slack.com/block-kit-builder/#%7B%22blocks%22%3A%5B%7B%22type%22%3A%22header%22%2C%22text%22%3A%7B%22type%22%3A%22plain_text%22%2C%22text%22%3A%22%F0%9F%8E%89%20New%20Release%20v2.0%22%7D%7D%2C%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%22We're%20excited%20to%20announce%20**version%202.0**%20is%20now%20available!%22%7D%7D%2C%7B%22type%22%3A%22header%22%2C%22text%22%3A%7B%22type%22%3A%22plain_text%22%2C%22text%22%3A%22What's%20New%22%7D%7D%2C%7B%22type%22%3A%22rich_text%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22rich_text_list%22%2C%22style%22%3A%22bullet%22%2C%22indent%22%3A0%2C%22elements%22%3A%5B%7B%22type%22%3A%22rich_text_section%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22Improved%20performance%22%7D%5D%7D%2C%7B%22type%22%3A%22rich_text_section%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22Better%20error%20handling%22%7D%5D%7D%2C%7B%22type%22%3A%22rich_text_section%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22New%20API%20endpoints%22%7D%5D%7D%5D%7D%5D%7D%2C%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%22Try%20it%20out%3A%20%5BDownload%20Now%5D(https%3A%2F%2Fexample.com%2Fdownload)%22%7D%7D%5D%7D"
 `;
 
 exports[`Snapshot Tests Complex Documents should render bug report 1`] = `
@@ -247,11 +351,43 @@ exports[`Snapshot Tests Complex Documents should render bug report 1`] = `
       }
     },
     {
-      "type": "section",
-      "text": {
-        "type": "mrkdwn",
-        "text": "1. Navigate to login page\\n2. Enter credentials\\n3. Click login button"
-      }
+      "type": "rich_text",
+      "elements": [
+        {
+          "type": "rich_text_list",
+          "style": "ordered",
+          "indent": 0,
+          "elements": [
+            {
+              "type": "rich_text_section",
+              "elements": [
+                {
+                  "type": "text",
+                  "text": "Navigate to login page"
+                }
+              ]
+            },
+            {
+              "type": "rich_text_section",
+              "elements": [
+                {
+                  "type": "text",
+                  "text": "Enter credentials"
+                }
+              ]
+            },
+            {
+              "type": "rich_text_section",
+              "elements": [
+                {
+                  "type": "text",
+                  "text": "Click login button"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     },
     {
       "type": "section",
@@ -261,11 +397,18 @@ exports[`Snapshot Tests Complex Documents should render bug report 1`] = `
       }
     },
     {
-      "type": "section",
-      "text": {
-        "type": "mrkdwn",
-        "text": "\`\`\`\\n// Console error:\\nTypeError: Cannot read property 'user'\\n\`\`\`"
-      }
+      "type": "rich_text",
+      "elements": [
+        {
+          "type": "rich_text_preformatted",
+          "elements": [
+            {
+              "type": "text",
+              "text": "// Console error:\\nTypeError: Cannot read property 'user'"
+            }
+          ]
+        }
+      ]
     },
     {
       "type": "section",
@@ -278,7 +421,7 @@ exports[`Snapshot Tests Complex Documents should render bug report 1`] = `
 }
 
 // Block Kit Builder URL:
-// https://app.slack.com/block-kit-builder/#%7B%22blocks%22%3A%5B%7B%22type%22%3A%22header%22%2C%22text%22%3A%7B%22type%22%3A%22plain_text%22%2C%22text%22%3A%22Bug%20Report%22%7D%7D%2C%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%22*Issue%3A*%20Login%20button%20not%20working%22%7D%7D%2C%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%22*Steps%20to%20Reproduce%3A*%22%7D%7D%2C%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%221.%20Navigate%20to%20login%20page%5Cn2.%20Enter%20credentials%5Cn3.%20Click%20login%20button%22%7D%7D%2C%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%22*Expected%3A*%20User%20logs%20in%5Cn**Actual%3A**%20Nothing%20happens%22%7D%7D%2C%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%22%60%60%60%5Cn%2F%2F%20Console%20error%3A%5CnTypeError%3A%20Cannot%20read%20property%20'user'%5Cn%60%60%60%22%7D%7D%2C%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%22Priority%3A%20**HIGH**%22%7D%7D%5D%7D"
+// https://app.slack.com/block-kit-builder/#%7B%22blocks%22%3A%5B%7B%22type%22%3A%22header%22%2C%22text%22%3A%7B%22type%22%3A%22plain_text%22%2C%22text%22%3A%22Bug%20Report%22%7D%7D%2C%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%22*Issue%3A*%20Login%20button%20not%20working%22%7D%7D%2C%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%22*Steps%20to%20Reproduce%3A*%22%7D%7D%2C%7B%22type%22%3A%22rich_text%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22rich_text_list%22%2C%22style%22%3A%22ordered%22%2C%22indent%22%3A0%2C%22elements%22%3A%5B%7B%22type%22%3A%22rich_text_section%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22Navigate%20to%20login%20page%22%7D%5D%7D%2C%7B%22type%22%3A%22rich_text_section%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22Enter%20credentials%22%7D%5D%7D%2C%7B%22type%22%3A%22rich_text_section%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22Click%20login%20button%22%7D%5D%7D%5D%7D%5D%7D%2C%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%22*Expected%3A*%20User%20logs%20in%5Cn**Actual%3A**%20Nothing%20happens%22%7D%7D%2C%7B%22type%22%3A%22rich_text%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22rich_text_preformatted%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22%2F%2F%20Console%20error%3A%5CnTypeError%3A%20Cannot%20read%20property%20'user'%22%7D%5D%7D%5D%7D%2C%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%22Priority%3A%20**HIGH**%22%7D%7D%5D%7D"
 `;
 
 exports[`Snapshot Tests Complex Documents should render complete document 1`] = `
@@ -313,11 +456,55 @@ exports[`Snapshot Tests Complex Documents should render complete document 1`] = 
       }
     },
     {
-      "type": "section",
-      "text": {
-        "type": "mrkdwn",
-        "text": "• Feature A\\n• Feature B\\n• Feature C (in progress)"
-      }
+      "type": "rich_text",
+      "elements": [
+        {
+          "type": "rich_text_list",
+          "style": "bullet",
+          "indent": 0,
+          "elements": [
+            {
+              "type": "rich_text_section",
+              "elements": [
+                {
+                  "type": "text",
+                  "text": "✅ "
+                },
+                {
+                  "type": "text",
+                  "text": "Feature A"
+                }
+              ]
+            },
+            {
+              "type": "rich_text_section",
+              "elements": [
+                {
+                  "type": "text",
+                  "text": "✅ "
+                },
+                {
+                  "type": "text",
+                  "text": "Feature B"
+                }
+              ]
+            },
+            {
+              "type": "rich_text_section",
+              "elements": [
+                {
+                  "type": "text",
+                  "text": "☐ "
+                },
+                {
+                  "type": "text",
+                  "text": "Feature C (in progress)"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     },
     {
       "type": "header",
@@ -327,11 +514,18 @@ exports[`Snapshot Tests Complex Documents should render complete document 1`] = 
       }
     },
     {
-      "type": "section",
-      "text": {
-        "type": "mrkdwn",
-        "text": "\`\`\`\\nconst result = await api.fetch();\\n\`\`\`"
-      }
+      "type": "rich_text",
+      "elements": [
+        {
+          "type": "rich_text_preformatted",
+          "elements": [
+            {
+              "type": "text",
+              "text": "const result = await api.fetch();"
+            }
+          ]
+        }
+      ]
     },
     {
       "type": "header",
@@ -414,11 +608,18 @@ exports[`Snapshot Tests Complex Documents should render complete document 1`] = 
       ]
     },
     {
-      "type": "section",
-      "text": {
-        "type": "mrkdwn",
-        "text": "> Remember: Ship early, ship often!"
-      }
+      "type": "rich_text",
+      "elements": [
+        {
+          "type": "rich_text_quote",
+          "elements": [
+            {
+              "type": "text",
+              "text": "Remember: Ship early, ship often!"
+            }
+          ]
+        }
+      ]
     },
     {
       "type": "section",
@@ -431,7 +632,7 @@ exports[`Snapshot Tests Complex Documents should render complete document 1`] = 
 }
 
 // Block Kit Builder URL:
-// https://app.slack.com/block-kit-builder/#%7B%22blocks%22%3A%5B%7B%22type%22%3A%22header%22%2C%22text%22%3A%7B%22type%22%3A%22plain_text%22%2C%22text%22%3A%22Project%20Update%22%7D%7D%2C%7B%22type%22%3A%22header%22%2C%22text%22%3A%7B%22type%22%3A%22plain_text%22%2C%22text%22%3A%22Overview%22%7D%7D%2C%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%22We've%20made%20significant%20progress%20on%20the%20**Q4%20roadmap**.%22%7D%7D%2C%7B%22type%22%3A%22header%22%2C%22text%22%3A%7B%22type%22%3A%22plain_text%22%2C%22text%22%3A%22Completed%20Items%22%7D%7D%2C%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%22%E2%80%A2%20Feature%20A%5Cn%E2%80%A2%20Feature%20B%5Cn%E2%80%A2%20Feature%20C%20(in%20progress)%22%7D%7D%2C%7B%22type%22%3A%22header%22%2C%22text%22%3A%7B%22type%22%3A%22plain_text%22%2C%22text%22%3A%22Code%20Example%22%7D%7D%2C%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%22%60%60%60%5Cnconst%20result%20%3D%20await%20api.fetch()%3B%5Cn%60%60%60%22%7D%7D%2C%7B%22type%22%3A%22header%22%2C%22text%22%3A%7B%22type%22%3A%22plain_text%22%2C%22text%22%3A%22Team%20Members%22%7D%7D%2C%7B%22type%22%3A%22table%22%2C%22rows%22%3A%5B%5B%7B%22type%22%3A%22raw_text%22%2C%22text%22%3A%22Name%22%7D%2C%7B%22type%22%3A%22raw_text%22%2C%22text%22%3A%22Role%22%7D%2C%7B%22type%22%3A%22raw_text%22%2C%22text%22%3A%22Status%22%7D%5D%2C%5B%7B%22type%22%3A%22rich_text%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22rich_text_section%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22Alice%22%2C%22style%22%3A%7B%22bold%22%3Atrue%7D%7D%5D%7D%5D%7D%2C%7B%22type%22%3A%22raw_text%22%2C%22text%22%3A%22Lead%22%7D%2C%7B%22type%22%3A%22raw_text%22%2C%22text%22%3A%22Active%22%7D%5D%2C%5B%7B%22type%22%3A%22rich_text%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22rich_text_section%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22Bob%22%2C%22style%22%3A%7B%22bold%22%3Atrue%7D%7D%5D%7D%5D%7D%2C%7B%22type%22%3A%22raw_text%22%2C%22text%22%3A%22Dev%22%7D%2C%7B%22type%22%3A%22raw_text%22%2C%22text%22%3A%22Active%22%7D%5D%5D%7D%2C%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%22%3E%20Remember%3A%20Ship%20early%2C%20ship%20often!%22%7D%7D%2C%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%22More%20details%20at%20%5Bour%20wiki%5D(https%3A%2F%2Fexample.com%2Fwiki).%22%7D%7D%5D%7D"
+// https://app.slack.com/block-kit-builder/#%7B%22blocks%22%3A%5B%7B%22type%22%3A%22header%22%2C%22text%22%3A%7B%22type%22%3A%22plain_text%22%2C%22text%22%3A%22Project%20Update%22%7D%7D%2C%7B%22type%22%3A%22header%22%2C%22text%22%3A%7B%22type%22%3A%22plain_text%22%2C%22text%22%3A%22Overview%22%7D%7D%2C%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%22We've%20made%20significant%20progress%20on%20the%20**Q4%20roadmap**.%22%7D%7D%2C%7B%22type%22%3A%22header%22%2C%22text%22%3A%7B%22type%22%3A%22plain_text%22%2C%22text%22%3A%22Completed%20Items%22%7D%7D%2C%7B%22type%22%3A%22rich_text%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22rich_text_list%22%2C%22style%22%3A%22bullet%22%2C%22indent%22%3A0%2C%22elements%22%3A%5B%7B%22type%22%3A%22rich_text_section%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22%E2%9C%85%20%22%7D%2C%7B%22type%22%3A%22text%22%2C%22text%22%3A%22Feature%20A%22%7D%5D%7D%2C%7B%22type%22%3A%22rich_text_section%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22%E2%9C%85%20%22%7D%2C%7B%22type%22%3A%22text%22%2C%22text%22%3A%22Feature%20B%22%7D%5D%7D%2C%7B%22type%22%3A%22rich_text_section%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22%E2%98%90%20%22%7D%2C%7B%22type%22%3A%22text%22%2C%22text%22%3A%22Feature%20C%20(in%20progress)%22%7D%5D%7D%5D%7D%5D%7D%2C%7B%22type%22%3A%22header%22%2C%22text%22%3A%7B%22type%22%3A%22plain_text%22%2C%22text%22%3A%22Code%20Example%22%7D%7D%2C%7B%22type%22%3A%22rich_text%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22rich_text_preformatted%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22const%20result%20%3D%20await%20api.fetch()%3B%22%7D%5D%7D%5D%7D%2C%7B%22type%22%3A%22header%22%2C%22text%22%3A%7B%22type%22%3A%22plain_text%22%2C%22text%22%3A%22Team%20Members%22%7D%7D%2C%7B%22type%22%3A%22table%22%2C%22rows%22%3A%5B%5B%7B%22type%22%3A%22raw_text%22%2C%22text%22%3A%22Name%22%7D%2C%7B%22type%22%3A%22raw_text%22%2C%22text%22%3A%22Role%22%7D%2C%7B%22type%22%3A%22raw_text%22%2C%22text%22%3A%22Status%22%7D%5D%2C%5B%7B%22type%22%3A%22rich_text%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22rich_text_section%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22Alice%22%2C%22style%22%3A%7B%22bold%22%3Atrue%7D%7D%5D%7D%5D%7D%2C%7B%22type%22%3A%22raw_text%22%2C%22text%22%3A%22Lead%22%7D%2C%7B%22type%22%3A%22raw_text%22%2C%22text%22%3A%22Active%22%7D%5D%2C%5B%7B%22type%22%3A%22rich_text%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22rich_text_section%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22Bob%22%2C%22style%22%3A%7B%22bold%22%3Atrue%7D%7D%5D%7D%5D%7D%2C%7B%22type%22%3A%22raw_text%22%2C%22text%22%3A%22Dev%22%7D%2C%7B%22type%22%3A%22raw_text%22%2C%22text%22%3A%22Active%22%7D%5D%5D%7D%2C%7B%22type%22%3A%22rich_text%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22rich_text_quote%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22Remember%3A%20Ship%20early%2C%20ship%20often!%22%7D%5D%7D%5D%7D%2C%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%22More%20details%20at%20%5Bour%20wiki%5D(https%3A%2F%2Fexample.com%2Fwiki).%22%7D%7D%5D%7D"
 `;
 
 exports[`Snapshot Tests Headings should render h1 heading 1`] = `
@@ -628,85 +829,269 @@ exports[`Snapshot Tests Lists should render list with formatting 1`] = `
 "{
   "blocks": [
     {
-      "type": "section",
-      "text": {
-        "type": "mrkdwn",
-        "text": "• *Bold* item\\n• _Italic_ item\\n• \`Code\` item"
-      }
+      "type": "rich_text",
+      "elements": [
+        {
+          "type": "rich_text_list",
+          "style": "bullet",
+          "indent": 0,
+          "elements": [
+            {
+              "type": "rich_text_section",
+              "elements": [
+                {
+                  "type": "text",
+                  "text": "Bold",
+                  "style": {
+                    "bold": true
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": " item"
+                }
+              ]
+            },
+            {
+              "type": "rich_text_section",
+              "elements": [
+                {
+                  "type": "text",
+                  "text": "Italic",
+                  "style": {
+                    "italic": true
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": " item"
+                }
+              ]
+            },
+            {
+              "type": "rich_text_section",
+              "elements": [
+                {
+                  "type": "text",
+                  "text": "Code",
+                  "style": {
+                    "code": true
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": " item"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ]
 }
 
 // Block Kit Builder URL:
-// https://app.slack.com/block-kit-builder/#%7B%22blocks%22%3A%5B%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%22%E2%80%A2%20*Bold*%20item%5Cn%E2%80%A2%20_Italic_%20item%5Cn%E2%80%A2%20%60Code%60%20item%22%7D%7D%5D%7D"
+// https://app.slack.com/block-kit-builder/#%7B%22blocks%22%3A%5B%7B%22type%22%3A%22rich_text%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22rich_text_list%22%2C%22style%22%3A%22bullet%22%2C%22indent%22%3A0%2C%22elements%22%3A%5B%7B%22type%22%3A%22rich_text_section%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22Bold%22%2C%22style%22%3A%7B%22bold%22%3Atrue%7D%7D%2C%7B%22type%22%3A%22text%22%2C%22text%22%3A%22%20item%22%7D%5D%7D%2C%7B%22type%22%3A%22rich_text_section%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22Italic%22%2C%22style%22%3A%7B%22italic%22%3Atrue%7D%7D%2C%7B%22type%22%3A%22text%22%2C%22text%22%3A%22%20item%22%7D%5D%7D%2C%7B%22type%22%3A%22rich_text_section%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22Code%22%2C%22style%22%3A%7B%22code%22%3Atrue%7D%7D%2C%7B%22type%22%3A%22text%22%2C%22text%22%3A%22%20item%22%7D%5D%7D%5D%7D%5D%7D%5D%7D"
 `;
 
 exports[`Snapshot Tests Lists should render nested lists 1`] = `
 "{
   "blocks": [
     {
-      "type": "section",
-      "text": {
-        "type": "mrkdwn",
-        "text": "• Level 1\\n• Level 2\\n• Level 3\\n• Back to 2\\n• Back to 1"
-      }
+      "type": "rich_text",
+      "elements": [
+        {
+          "type": "rich_text_list",
+          "style": "bullet",
+          "indent": 0,
+          "elements": [
+            {
+              "type": "rich_text_section",
+              "elements": [
+                {
+                  "type": "text",
+                  "text": "Level 1"
+                }
+              ]
+            },
+            {
+              "type": "rich_text_section",
+              "elements": [
+                {
+                  "type": "text",
+                  "text": "Back to 1"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ]
 }
 
 // Block Kit Builder URL:
-// https://app.slack.com/block-kit-builder/#%7B%22blocks%22%3A%5B%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%22%E2%80%A2%20Level%201%5Cn%E2%80%A2%20Level%202%5Cn%E2%80%A2%20Level%203%5Cn%E2%80%A2%20Back%20to%202%5Cn%E2%80%A2%20Back%20to%201%22%7D%7D%5D%7D"
+// https://app.slack.com/block-kit-builder/#%7B%22blocks%22%3A%5B%7B%22type%22%3A%22rich_text%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22rich_text_list%22%2C%22style%22%3A%22bullet%22%2C%22indent%22%3A0%2C%22elements%22%3A%5B%7B%22type%22%3A%22rich_text_section%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22Level%201%22%7D%5D%7D%2C%7B%22type%22%3A%22rich_text_section%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22Back%20to%201%22%7D%5D%7D%5D%7D%5D%7D%5D%7D"
 `;
 
 exports[`Snapshot Tests Lists should render ordered list 1`] = `
 "{
   "blocks": [
     {
-      "type": "section",
-      "text": {
-        "type": "mrkdwn",
-        "text": "1. First step\\n2. Second step\\n3. Third step"
-      }
+      "type": "rich_text",
+      "elements": [
+        {
+          "type": "rich_text_list",
+          "style": "ordered",
+          "indent": 0,
+          "elements": [
+            {
+              "type": "rich_text_section",
+              "elements": [
+                {
+                  "type": "text",
+                  "text": "First step"
+                }
+              ]
+            },
+            {
+              "type": "rich_text_section",
+              "elements": [
+                {
+                  "type": "text",
+                  "text": "Second step"
+                }
+              ]
+            },
+            {
+              "type": "rich_text_section",
+              "elements": [
+                {
+                  "type": "text",
+                  "text": "Third step"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ]
 }
 
 // Block Kit Builder URL:
-// https://app.slack.com/block-kit-builder/#%7B%22blocks%22%3A%5B%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%221.%20First%20step%5Cn2.%20Second%20step%5Cn3.%20Third%20step%22%7D%7D%5D%7D"
+// https://app.slack.com/block-kit-builder/#%7B%22blocks%22%3A%5B%7B%22type%22%3A%22rich_text%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22rich_text_list%22%2C%22style%22%3A%22ordered%22%2C%22indent%22%3A0%2C%22elements%22%3A%5B%7B%22type%22%3A%22rich_text_section%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22First%20step%22%7D%5D%7D%2C%7B%22type%22%3A%22rich_text_section%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22Second%20step%22%7D%5D%7D%2C%7B%22type%22%3A%22rich_text_section%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22Third%20step%22%7D%5D%7D%5D%7D%5D%7D%5D%7D"
 `;
 
 exports[`Snapshot Tests Lists should render task list 1`] = `
 "{
   "blocks": [
     {
-      "type": "section",
-      "text": {
-        "type": "mrkdwn",
-        "text": "• Incomplete task\\n• Completed task\\n• Another task"
-      }
+      "type": "rich_text",
+      "elements": [
+        {
+          "type": "rich_text_list",
+          "style": "bullet",
+          "indent": 0,
+          "elements": [
+            {
+              "type": "rich_text_section",
+              "elements": [
+                {
+                  "type": "text",
+                  "text": "☐ "
+                },
+                {
+                  "type": "text",
+                  "text": "Incomplete task"
+                }
+              ]
+            },
+            {
+              "type": "rich_text_section",
+              "elements": [
+                {
+                  "type": "text",
+                  "text": "✅ "
+                },
+                {
+                  "type": "text",
+                  "text": "Completed task"
+                }
+              ]
+            },
+            {
+              "type": "rich_text_section",
+              "elements": [
+                {
+                  "type": "text",
+                  "text": "☐ "
+                },
+                {
+                  "type": "text",
+                  "text": "Another task"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ]
 }
 
 // Block Kit Builder URL:
-// https://app.slack.com/block-kit-builder/#%7B%22blocks%22%3A%5B%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%22%E2%80%A2%20Incomplete%20task%5Cn%E2%80%A2%20Completed%20task%5Cn%E2%80%A2%20Another%20task%22%7D%7D%5D%7D"
+// https://app.slack.com/block-kit-builder/#%7B%22blocks%22%3A%5B%7B%22type%22%3A%22rich_text%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22rich_text_list%22%2C%22style%22%3A%22bullet%22%2C%22indent%22%3A0%2C%22elements%22%3A%5B%7B%22type%22%3A%22rich_text_section%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22%E2%98%90%20%22%7D%2C%7B%22type%22%3A%22text%22%2C%22text%22%3A%22Incomplete%20task%22%7D%5D%7D%2C%7B%22type%22%3A%22rich_text_section%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22%E2%9C%85%20%22%7D%2C%7B%22type%22%3A%22text%22%2C%22text%22%3A%22Completed%20task%22%7D%5D%7D%2C%7B%22type%22%3A%22rich_text_section%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22%E2%98%90%20%22%7D%2C%7B%22type%22%3A%22text%22%2C%22text%22%3A%22Another%20task%22%7D%5D%7D%5D%7D%5D%7D%5D%7D"
 `;
 
 exports[`Snapshot Tests Lists should render unordered list 1`] = `
 "{
   "blocks": [
     {
-      "type": "section",
-      "text": {
-        "type": "mrkdwn",
-        "text": "• First item\\n• Second item\\n• Third item"
-      }
+      "type": "rich_text",
+      "elements": [
+        {
+          "type": "rich_text_list",
+          "style": "bullet",
+          "indent": 0,
+          "elements": [
+            {
+              "type": "rich_text_section",
+              "elements": [
+                {
+                  "type": "text",
+                  "text": "First item"
+                }
+              ]
+            },
+            {
+              "type": "rich_text_section",
+              "elements": [
+                {
+                  "type": "text",
+                  "text": "Second item"
+                }
+              ]
+            },
+            {
+              "type": "rich_text_section",
+              "elements": [
+                {
+                  "type": "text",
+                  "text": "Third item"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ]
 }
 
 // Block Kit Builder URL:
-// https://app.slack.com/block-kit-builder/#%7B%22blocks%22%3A%5B%7B%22type%22%3A%22section%22%2C%22text%22%3A%7B%22type%22%3A%22mrkdwn%22%2C%22text%22%3A%22%E2%80%A2%20First%20item%5Cn%E2%80%A2%20Second%20item%5Cn%E2%80%A2%20Third%20item%22%7D%7D%5D%7D"
+// https://app.slack.com/block-kit-builder/#%7B%22blocks%22%3A%5B%7B%22type%22%3A%22rich_text%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22rich_text_list%22%2C%22style%22%3A%22bullet%22%2C%22indent%22%3A0%2C%22elements%22%3A%5B%7B%22type%22%3A%22rich_text_section%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22First%20item%22%7D%5D%7D%2C%7B%22type%22%3A%22rich_text_section%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22Second%20item%22%7D%5D%7D%2C%7B%22type%22%3A%22rich_text_section%22%2C%22elements%22%3A%5B%7B%22type%22%3A%22text%22%2C%22text%22%3A%22Third%20item%22%7D%5D%7D%5D%7D%5D%7D%5D%7D"
 `;
 
 exports[`Snapshot Tests Tables should render simple table 1`] = `

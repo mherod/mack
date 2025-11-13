@@ -77,6 +77,42 @@ export interface RichTextSectionElement {
   name?: string; // for emoji
 }
 
+// Rich text block (container for rich text elements)
+export interface RichTextBlock {
+  type: 'rich_text';
+  block_id?: string;
+  elements: (
+    | RichTextListElement
+    | RichTextElement
+    | RichTextPreformattedElement
+    | RichTextQuoteElement
+  )[];
+}
+
+// Rich text list element (for bullet and numbered lists)
+export interface RichTextListElement {
+  type: 'rich_text_list';
+  style: 'bullet' | 'ordered';
+  indent?: number;
+  offset?: number; // Starting number for ordered lists
+  border?: number;
+  elements: RichTextElement[];
+}
+
+// Rich text preformatted element (for code blocks)
+export interface RichTextPreformattedElement {
+  type: 'rich_text_preformatted';
+  elements: RichTextSectionElement[];
+  border?: number;
+}
+
+// Rich text quote element (for blockquotes)
+export interface RichTextQuoteElement {
+  type: 'rich_text_quote';
+  elements: RichTextSectionElement[];
+  border?: number;
+}
+
 const MAX_TEXT_LENGTH = 3000;
 const MAX_HEADER_LENGTH = 150;
 const MAX_IMAGE_TITLE_LENGTH = 2000;
@@ -255,6 +291,69 @@ export function file(externalId: string): FileBlock {
     type: 'file',
     external_id: externalId,
     source: 'remote',
+  };
+}
+
+export function richTextList(
+  items: RichTextElement[],
+  style: 'bullet' | 'ordered' = 'bullet',
+  indent = 0
+): RichTextBlock {
+  if (!Array.isArray(items) || items.length === 0) {
+    throw new ValidationError('Rich text list must have at least one item');
+  }
+
+  return {
+    type: 'rich_text',
+    elements: [
+      {
+        type: 'rich_text_list',
+        style,
+        indent,
+        elements: items,
+      },
+    ],
+  };
+}
+
+export function richTextCode(code: string): RichTextBlock {
+  if (typeof code !== 'string') {
+    throw new ValidationError(
+      `Code text must be a string, received ${typeof code}`
+    );
+  }
+
+  return {
+    type: 'rich_text',
+    elements: [
+      {
+        type: 'rich_text_preformatted',
+        elements: [
+          {
+            type: 'text',
+            text: code,
+          },
+        ],
+      },
+    ],
+  };
+}
+
+export function richTextQuote(
+  elements: RichTextSectionElement[]
+): RichTextBlock {
+  if (!Array.isArray(elements) || elements.length === 0) {
+    throw new ValidationError('Rich text quote must have at least one element');
+  }
+
+  return {
+    type: 'rich_text',
+    elements: [
+      {
+        type: 'rich_text_quote',
+        elements,
+      },
+    ],
   };
 }
 
